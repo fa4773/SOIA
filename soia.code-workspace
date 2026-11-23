@@ -1,0 +1,24 @@
+{
+  "folders": [
+    {
+      "name": "SOIA Root",
+      "path": "."
+    },
+    {
+      "name": "Electron Harness",
+      "path": "electron"
+    },
+    {
+      "name": "UI & Components",
+      "path": "src"
+    },
+    {
+      "name": "Linux ISO Infrastructure",
+      "path": "linux-iso"
+    }
+  ],
+  "settings": {
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "editor.formatOnSave": true
+  }
+}

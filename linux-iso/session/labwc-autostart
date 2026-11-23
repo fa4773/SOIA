@@ -1,0 +1,37 @@
+#!/bin/sh
+# ==============================================================================
+# SOIA OS - Labwc Wayland Autostart Session
+# Avvia l'Harness SOIA come desktop principale ed unico a schermo intero
+# ==============================================================================
+
+# Imposta variabili ambiente Wayland e Chromium/Electron
+export XDG_CURRENT_DESKTOP=SOIA
+export XDG_SESSION_TYPE=wayland
+export GDK_BACKEND=wayland
+export QT_QPA_PLATFORM=wayland
+export ELECTRON_OZONE_PLATFORM_HINT=auto
+export MOZ_ENABLE_WAYLAND=1
+
+# Inizializza persistenza se presente
+if [ -x /usr/local/bin/setup-persistence.sh ]; then
+    /usr/local/bin/setup-persistence.sh &
+fi
+
+# Imposta sfondo nero elegante durante il caricamento
+swaybg -c "#09090b" &
+
+# Esegui pipewire per audio
+pipewire &
+wireplumber &
+
+# Verifica se siamo in modalità installer esplicita
+if grep -q "soia_installer=true" /proc/cmdline; then
+    alacritty -e /usr/local/bin/soia-install.sh &
+fi
+
+# Avvio dell'applicazione principale SOIA in modalità Kiosk/Fullscreen desktop
+if [ -f /opt/soia/soia ]; then
+    /opt/soia/soia --kiosk --ozone-platform=wayland --enable-features=UseOzonePlatform,WaylandWindowDecorations &
+elif [ -d /opt/soia ]; then
+    cd /opt/soia && npx electron . --kiosk --ozone-platform=wayland &
+fi

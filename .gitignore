@@ -1,0 +1,34 @@
+# Node & Dependencies
+node_modules/
+package-lock.json.bak
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+dist-electron/
+release/
+*.iso
+*.img
+
+# Linux ISO Build artifacts
+linux-iso/cache/
+linux-iso/chroot/
+linux-iso/.build/
+linux-iso/binary/
+linux-iso/*.iso
+
+# Environment & Local files
+.env
+.env.local
+.env.*.local
+*.gdoc
+*.gsheet
+*.gslides
+
+# IDE & OS
+.DS_Store
+Thumbs.db
+*.swp
+*.bak

@@ -1,0 +1,55 @@
+name: Build SOIA Debian ISO
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'linux-iso/**'
+      - 'electron/**'
+      - 'src/**'
+
+jobs:
+  build-iso:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free Disk Space on Runner
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Node Dependencies & Build Harness
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install live-build & ISO Creation Tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y live-build debootstrap squashfs-tools xorriso grub-pc-bin grub-efi-amd64-bin rsync
+
+      - name: Build SOIA Debian Live ISO
+        run: |
+          cd linux-iso
+          chmod +x build-debian-iso.sh session/* installer/*
+          sudo ./build-debian-iso.sh
+
+      - name: Upload ISO Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: soia-os-latest-amd64
+          path: linux-iso/soia-os-latest-amd64.iso
+          if-no-files-found: error

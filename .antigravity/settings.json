@@ -1,0 +1,18 @@
+{
+  "project_name": "SOIA",
+  "version": "1.0.0-os",
+  "architecture": "debian-live-electron",
+  "target_platforms": ["debian-linux", "windows-dev", "uefi-live-usb"],
+  "display_server": "wayland-labwc",
+  "default_execution_mode": "harness-fullscreen",
+  "default_security_profile": "balanced",
+  "agent_features": {
+    "harness_primary_desktop": true,
+    "tabbed_multitasking": true,
+    "detachable_tabs": true,
+    "agentic_browser_chromium": true,
+    "integrated_pty_shell": true,
+    "doc_pdf_generator": true,
+    "debian_persistence_support": true
+  }
+}
