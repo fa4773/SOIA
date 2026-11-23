@@ -21,7 +21,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Installa prerequisiti di compilazione live-build
-echo "[1/6] Verifica dipendenze di build sull'host..."
+echo "[1/6] Verifica dipendenze di build sull'host Debian..."
 apt-get update -y
 apt-get install -y live-build debootstrap squashfs-tools xorriso grub-pc-bin grub-efi-amd64-bin rsync curl
 
@@ -30,11 +30,18 @@ rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 
-echo "[2/6] Configurazione ambiente live-build per Debian Bookworm / Trixie..."
+echo "[2/6] Configurazione ambiente live-build per Debian Bookworm..."
 lb config \
+    --mode debian \
     --distribution bookworm \
     --architectures amd64 \
     --archive-areas "main contrib non-free non-free-firmware" \
+    --mirror-bootstrap http://deb.debian.org/debian/ \
+    --mirror-chroot http://deb.debian.org/debian/ \
+    --mirror-binary http://deb.debian.org/debian/ \
+    --parent-mirror-bootstrap http://deb.debian.org/debian/ \
+    --parent-mirror-chroot http://deb.debian.org/debian/ \
+    --parent-mirror-binary http://deb.debian.org/debian/ \
     --bootloader grub-efi \
     --binary-images iso-hybrid \
     --iso-application "SOIA Autonomous OS" \
@@ -44,14 +51,12 @@ lb config \
     --win32-loader false
 
 # Lista dei pacchetti da includere nel sistema
-echo "[3/6] Definizione pacchetti di sistema SOIA (Kernel, Wayland, Node, Pandoc, LibreOffice)..."
+echo "[3/6] Definizione pacchetti di sistema SOIA..."
 mkdir -p config/package-lists
 cat << 'EOF' > config/package-lists/soia.list.chroot
 # Kernel e Firmware Hardware
 linux-image-amd64
 firmware-linux
-firmware-linux-free
-firmware-linux-nonfree
 firmware-misc-nonfree
 firmware-realtek
 firmware-iwlwifi
@@ -59,9 +64,9 @@ wireless-regdb
 pciutils
 usbutils
 
-# Compositor Wayland ultra-leggero e Display
-labwc
-swaybg
+# Compositor Wayland ultra-leggero e Display (cage kiosk + sway / xwayland)
+cage
+sway
 xwayland
 seatd
 pipewire
@@ -81,7 +86,6 @@ cryptsetup
 # Document Engine & Produttività (per generare .doc/.docx/.pdf al volo da AI)
 pandoc
 libreoffice-writer-nogui
-texlive-extra-utils
 poppler-utils
 
 # Runtime Node.js ed Electron
@@ -99,8 +103,8 @@ libgbm1
 libdrm2
 EOF
 
-# Personalizzazione Chroot: Utente live 'soia', autologin e labwc config
-echo "[4/6] Configurazione utente, sessione labwc e permessi..."
+# Personalizzazione Chroot: Utente live 'soia', autologin
+echo "[4/6] Configurazione utente, sessione Wayland e permessi..."
 mkdir -p config/includes.chroot/etc/systemd/system/getty@tty1.service.d
 cat << 'EOF' > config/includes.chroot/etc/systemd/system/getty@tty1.service.d/autologin.conf
 [Service]
@@ -108,15 +112,12 @@ ExecStart=
 ExecStart=-/sbin/agetty --autologin soia --noclear %I $TERM
 EOF
 
-# File autostart labwc e avvio automatico dell'interfaccia SOIA
-mkdir -p config/includes.chroot/home/soia/.config/labwc
-cp "$WORK_DIR/session/labwc-autostart" config/includes.chroot/home/soia/.config/labwc/autostart
-chmod +x config/includes.chroot/home/soia/.config/labwc/autostart
-
-# Copia script di persistenza e installer in /usr/local/bin
+# Copia script di avvio, persistenza e installer in /usr/local/bin
 mkdir -p config/includes.chroot/usr/local/bin
+cp "$WORK_DIR/session/labwc-autostart" config/includes.chroot/usr/local/bin/soia-autostart
 cp "$WORK_DIR/session/setup-persistence.sh" config/includes.chroot/usr/local/bin/
 cp "$WORK_DIR/installer/soia-install.sh" config/includes.chroot/usr/local/bin/
+chmod +x config/includes.chroot/usr/local/bin/soia-autostart
 chmod +x config/includes.chroot/usr/local/bin/setup-persistence.sh
 chmod +x config/includes.chroot/usr/local/bin/soia-install.sh
 
@@ -136,10 +137,16 @@ echo "soia ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/soia
 chmod 0440 /etc/sudoers.d/soia
 chown -R soia:soia /home/soia
 
-# Imposta avvio di labwc all'accesso su tty1
+# Imposta avvio della sessione SOIA all'accesso su tty1
 cat << 'SH' >> /home/soia/.bash_profile
 if [ -z "$WAYLAND_DISPLAY" ] && [ "$XDG_VTNR" = 1 ]; then
-  exec labwc
+  if command -v labwc >/dev/null 2>&1; then
+    exec labwc
+  elif command -v cage >/dev/null 2>&1; then
+    exec cage -- /usr/local/bin/soia-autostart
+  else
+    exec sway
+  fi
 fi
 SH
 chown soia:soia /home/soia/.bash_profile
@@ -182,7 +189,3 @@ fi
 echo "[6/6] Build completata!"
 echo "Immagine ISO generata con successo:"
 echo "-> $OUTPUT_ISO"
-echo ""
-echo "Per scriverla su una chiavetta USB (es. /dev/sdX):"
-echo "  sudo dd if=$OUTPUT_ISO of=/dev/sdX bs=4M status=progress conv=fsync"
-echo "========================================================================"

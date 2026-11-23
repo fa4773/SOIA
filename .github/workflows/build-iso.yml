@@ -8,6 +8,7 @@ on:
       - 'linux-iso/**'
       - 'electron/**'
       - 'src/**'
+      - '.github/workflows/build-iso.yml'
 
 jobs:
   build-iso:
@@ -36,16 +37,13 @@ jobs:
           npm ci
           npm run build
 
-      - name: Install live-build & ISO Creation Tools
+      - name: Build SOIA Debian Live ISO in Debian Container
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y live-build debootstrap squashfs-tools xorriso grub-pc-bin grub-efi-amd64-bin rsync
-
-      - name: Build SOIA Debian Live ISO
-        run: |
-          cd linux-iso
-          chmod +x build-debian-iso.sh session/* installer/*
-          sudo ./build-debian-iso.sh
+          docker run --privileged --rm \
+            -v "$(pwd)":/workspace \
+            -w /workspace/linux-iso \
+            debian:bookworm \
+            bash -c "chmod +x build-debian-iso.sh session/* installer/* && ./build-debian-iso.sh"
 
       - name: Upload ISO Artifact
         uses: actions/upload-artifact@v4
