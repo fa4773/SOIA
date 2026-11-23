@@ -7,7 +7,7 @@ set -e
 export DEBIAN_FRONTEND=noninteractive
 
 WORK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUILD_DIR="$WORK_DIR/build_iso"
+BUILD_DIR="/tmp/soia_build_iso"
 OUTPUT_ISO="$WORK_DIR/soia-os-latest-amd64.iso"
 
 echo "========================================================================"
@@ -42,7 +42,7 @@ lb config \
     --parent-mirror-bootstrap http://deb.debian.org/debian/ \
     --parent-mirror-chroot http://deb.debian.org/debian/ \
     --parent-mirror-binary http://deb.debian.org/debian/ \
-    --bootloader grub-efi \
+    --bootloaders "grub-pc grub-efi" \
     --binary-images iso-hybrid \
     --iso-application "SOIA Autonomous OS" \
     --iso-publisher "SOIA Open Source Project" \
@@ -77,7 +77,7 @@ alacritty
 network-manager
 iproute2
 parted
-wipefs
+util-linux
 e2fsprogs
 dosfstools
 btrfs-progs
@@ -121,11 +121,9 @@ chmod +x config/includes.chroot/usr/local/bin/soia-autostart
 chmod +x config/includes.chroot/usr/local/bin/setup-persistence.sh
 chmod +x config/includes.chroot/usr/local/bin/soia-install.sh
 
-# Copia GRUB custom menu
-mkdir -p config/bootloaders/grub-pc
-mkdir -p config/bootloaders/grub-efi
-cp "$WORK_DIR/grub/grub.cfg" config/bootloaders/grub-pc/
-cp "$WORK_DIR/grub/grub.cfg" config/bootloaders/grub-efi/
+# Copia GRUB custom menu in includes.binary (senza sovrascrivere i template di sistema)
+mkdir -p config/includes.binary/boot/grub
+cp "$WORK_DIR/grub/grub.cfg" config/includes.binary/boot/grub/grub.cfg
 
 # Hook per creare l'utente 'soia' con sudo senza password
 mkdir -p config/hooks/live
