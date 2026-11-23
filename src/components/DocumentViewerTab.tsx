@@ -21,12 +21,12 @@ export const DocumentViewerTab: React.FC<DocumentViewerTabProps> = ({ file }) =>
           if (res.success && res.content !== undefined) {
             setContent(res.content);
           } else {
-            setContent(`Errore o file vuoto: ${res.error || 'Nessun contenuto'}`);
+            setContent(`Error or empty file: ${res.error || 'No content'}`);
           }
         }
       } else {
         if (isMounted) {
-          setContent('Anteprima documento (modalità simulata / standalone).');
+          setContent('Document preview (simulated / standalone mode).');
         }
       }
       if (isMounted) setLoading(false);
@@ -61,20 +61,20 @@ export const DocumentViewerTab: React.FC<DocumentViewerTabProps> = ({ file }) =>
           className="flex items-center gap-1.5 px-3 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors"
         >
           {saved ? <Check size={13} className="text-emerald-400" /> : <Save size={13} />}
-          <span>{saved ? 'Salvato' : 'Salva Modifiche'}</span>
+          <span>{saved ? 'Saved' : 'Save Changes'}</span>
         </button>
       </div>
 
       {/* Editor Content */}
       <div className="flex-1 p-4 bg-zinc-950 overflow-hidden">
         {loading ? (
-          <div className="text-xs text-zinc-500 italic p-4">Caricamento documento in corso...</div>
+          <div className="text-xs text-zinc-500 italic p-4">Loading document...</div>
         ) : (
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className="w-full h-full bg-zinc-900/40 text-zinc-100 border border-zinc-800 rounded-lg p-4 font-mono text-xs focus:outline-none focus:border-zinc-700 resize-none custom-scrollbar"
-            placeholder="Scrivi qui il contenuto del file..."
+            placeholder="Write file content here..."
           />
         )}
       </div>

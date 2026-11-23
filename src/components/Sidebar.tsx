@@ -39,11 +39,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [activeSection, setActiveSection] = useState<'chats' | 'files'>('chats');
   const [filesExpanded, setFilesExpanded] = useState(true);
 
-  // Esempi chat recenti
+  // Recent chat examples
   const [chatHistory] = useState([
-    { id: 'chat-1', title: 'Configurazione rete e persistenza Debian' },
-    { id: 'chat-2', title: 'Generazione report Word e sintesi dati' },
-    { id: 'chat-3', title: 'Script shell per partizionamento disco' }
+    { id: 'chat-1', title: 'Debian network & persistence setup' },
+    { id: 'chat-2', title: 'Word report generation & data summary' },
+    { id: 'chat-3', title: 'Shell script for disk partitioning' }
   ]);
 
   return (
@@ -61,7 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         <button
           onClick={onOpenNewChat}
-          title="Nuova Chat Agentica"
+          title="New Agentic Chat"
           className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors"
         >
           <Plus size={16} />
@@ -90,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }`}
         >
           <FolderTree size={14} />
-          <span>Documenti & File</span>
+          <span>Documents & Files</span>
         </button>
       </div>
 
@@ -99,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {activeSection === 'chats' ? (
           <div>
             <div className="flex items-center justify-between px-2 py-1 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
-              <span>Recenti</span>
+              <span>Recent</span>
             </div>
             <div className="space-y-0.5 mt-1">
               <button
@@ -111,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }`}
               >
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="truncate">Sessione Principale (Live)</span>
+                <span className="truncate">Main Session (Live)</span>
               </button>
               {chatHistory.map((chat) => (
                 <button
@@ -128,7 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Quick System Tools */}
             <div className="pt-4 border-t border-zinc-900">
               <div className="px-2 py-1 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">
-                Strumenti SOIA
+                SOIA Tools
               </div>
               <div className="space-y-0.5 mt-1">
                 <button
@@ -140,7 +140,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }`}
                 >
                   <Globe size={14} className="text-blue-400" />
-                  <span>Browser Agentico</span>
+                  <span>Agentic Browser</span>
                 </button>
                 <button
                   onClick={() => onSelectTab('tab-terminal')}
@@ -151,7 +151,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }`}
                 >
                   <Terminal size={14} className="text-emerald-400" />
-                  <span>Terminale Linux</span>
+                  <span>Linux Terminal</span>
                 </button>
               </div>
             </div>
@@ -164,11 +164,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className="flex items-center gap-1 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider hover:text-zinc-200"
               >
                 {filesExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                <span>Documenti & Dati</span>
+                <span>Documents & Data</span>
               </button>
               <button
                 onClick={onCreateDoc}
-                title="Crea nuovo documento o nota"
+                title="Create new document or note"
                 className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-emerald-400 transition-colors"
               >
                 <Plus size={14} />
@@ -179,7 +179,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="space-y-0.5 mt-1">
                 {files.length === 0 ? (
                   <div className="px-2 py-3 text-center text-zinc-500 italic">
-                    Nessun documento creato. Clicca + per iniziare.
+                    No documents created yet. Click + to get started.
                   </div>
                 ) : (
                   files.map((file, idx) => (
@@ -225,7 +225,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <span className="flex items-center gap-2">
             <Settings size={15} className="text-zinc-400" />
-            <span>Impostazioni OS & AI</span>
+            <span>OS & AI Settings</span>
           </span>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/60">
             {systemInfo?.platform === 'win32' ? 'Win Dev' : 'Debian'}

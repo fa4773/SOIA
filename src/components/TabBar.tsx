@@ -68,28 +68,28 @@ export const TabBar: React.FC<TabBarProps> = ({
             {getTabIcon(tab.type)}
             <span className="truncate max-w-[130px]">{tab.title}</span>
 
-            {/* Azione Stacco Finestra (per tutte tranne la Tab 0) */}
+            {/* Detach Window Action (for all tabs except Tab 0) */}
             {tab.detachable && !isPinnedHarness && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onDetachTab(tab);
                 }}
-                title="Stacca scheda in finestra indipendente"
+                title="Detach tab into independent window"
                 className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-opacity"
               >
                 <ExternalLink size={12} />
               </button>
             )}
 
-            {/* Azione Chiusura */}
+            {/* Close Action */}
             {tab.closable && !isPinnedHarness && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onCloseTab(tab.id);
                 }}
-                title="Chiudi scheda"
+                title="Close tab"
                 className="p-0.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400 transition-colors"
               >
                 <X size={12} />
@@ -101,7 +101,7 @@ export const TabBar: React.FC<TabBarProps> = ({
 
       <button
         onClick={onNewTab}
-        title="Apri nuova scheda"
+        title="Open new tab"
         className="p-1.5 rounded-md hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 transition-colors ml-1"
       >
         <Plus size={15} />

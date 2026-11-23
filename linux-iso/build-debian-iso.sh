@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # SOIA OS - Debian Live ISO Builder
-# Generatore di immagine ISO Debian avviabile con Harness Agentico Electron
+# Bootable Debian ISO image generator with Electron Agentic Harness
 # ==============================================================================
 set -e
 export DEBIAN_FRONTEND=noninteractive
@@ -11,26 +11,26 @@ BUILD_DIR="/tmp/soia_build_iso"
 OUTPUT_ISO="$WORK_DIR/soia-os-latest-amd64.iso"
 
 echo "========================================================================"
-echo "               COSTRUZIONE IMMAGINE ISO SOIA LINUX (DEBIAN)            "
+echo "                 BUILDING SOIA LINUX ISO IMAGE (DEBIAN)                "
 echo "========================================================================"
 
-# Verifica privilegi
+# Check privileges
 if [ "$EUID" -ne 0 ]; then
-  echo "[ERRORE] Esegui lo script con permessi di root (sudo ./build-debian-iso.sh)."
+  echo "[ERROR] Run this script with root privileges (sudo ./build-debian-iso.sh)."
   exit 1
 fi
 
-# Installa prerequisiti di compilazione live-build
-echo "[1/6] Verifica dipendenze di build sull'host Debian..."
+# Install live-build compilation prerequisites
+echo "[1/6] Checking build dependencies on Debian host..."
 apt-get update -y
 apt-get install -y live-build debootstrap squashfs-tools xorriso grub-pc-bin grub-efi-amd64-bin dosfstools mtools rsync curl
 
-# Pulizia build directory precedente
+# Clean previous build directory
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 
-echo "[2/6] Configurazione ambiente live-build per Debian Bookworm..."
+echo "[2/6] Configuring live-build environment for Debian Bookworm..."
 lb config \
     --mode debian \
     --distribution bookworm \
@@ -50,11 +50,11 @@ lb config \
     --memtest none \
     --win32-loader false
 
-# Lista dei pacchetti da includere nel sistema
-echo "[3/6] Definizione pacchetti di sistema SOIA..."
+# List of packages to include in the system
+echo "[3/6] Defining SOIA system packages..."
 mkdir -p config/package-lists
 cat << 'EOF' > config/package-lists/soia.list.chroot
-# Kernel e Firmware Hardware
+# Kernel and Hardware Firmware
 linux-image-amd64
 firmware-linux
 firmware-misc-nonfree
@@ -64,7 +64,7 @@ wireless-regdb
 pciutils
 usbutils
 
-# Compositor Wayland ultra-leggero e Display (cage kiosk + sway / xwayland)
+# Ultra-lightweight Wayland Compositor and Display (cage kiosk + sway / xwayland)
 cage
 sway
 xwayland
@@ -73,7 +73,7 @@ pipewire
 wireplumber
 alacritty
 
-# Strumenti di rete e storage
+# Network and storage tools
 network-manager
 iproute2
 parted
@@ -83,12 +83,12 @@ dosfstools
 btrfs-progs
 cryptsetup
 
-# Document Engine & Produttività (per generare .doc/.docx/.pdf al volo da AI)
+# Document Engine & Productivity (for on-the-fly .doc/.docx/.pdf generation via AI)
 pandoc
 libreoffice-writer-nogui
 poppler-utils
 
-# Runtime Node.js ed Electron
+# Node.js and Electron Runtime
 nodejs
 npm
 curl
@@ -103,8 +103,8 @@ libgbm1
 libdrm2
 EOF
 
-# Personalizzazione Chroot: Utente live 'soia', autologin
-echo "[4/6] Configurazione utente, sessione Wayland e permessi..."
+# Chroot customization: Live user 'soia', autologin
+echo "[4/6] Configuring user, Wayland session, and permissions..."
 mkdir -p config/includes.chroot/etc/systemd/system/getty@tty1.service.d
 cat << 'EOF' > config/includes.chroot/etc/systemd/system/getty@tty1.service.d/autologin.conf
 [Service]
@@ -112,7 +112,7 @@ ExecStart=
 ExecStart=-/sbin/agetty --autologin soia --noclear %I $TERM
 EOF
 
-# Copia script di avvio, persistenza e installer in /usr/local/bin
+# Copy startup, persistence, and installer scripts to /usr/local/bin
 mkdir -p config/includes.chroot/usr/local/bin
 cp "$WORK_DIR/session/labwc-autostart" config/includes.chroot/usr/local/bin/soia-autostart
 cp "$WORK_DIR/session/setup-persistence.sh" config/includes.chroot/usr/local/bin/
@@ -121,11 +121,11 @@ chmod +x config/includes.chroot/usr/local/bin/soia-autostart
 chmod +x config/includes.chroot/usr/local/bin/setup-persistence.sh
 chmod +x config/includes.chroot/usr/local/bin/soia-install.sh
 
-# Copia GRUB custom menu in includes.binary (senza sovrascrivere i template di sistema)
+# Copy custom GRUB menu into includes.binary (without overwriting system templates)
 mkdir -p config/includes.binary/boot/grub
 cp "$WORK_DIR/grub/grub.cfg" config/includes.binary/boot/grub/grub.cfg
 
-# Hook per creare l'utente 'soia' con sudo senza password
+# Hook to create the 'soia' user with passwordless sudo
 mkdir -p config/hooks/live
 cat << 'EOF' > config/hooks/live/01-create-soia-user.chroot
 #!/bin/sh
@@ -142,7 +142,7 @@ chmod 0440 /etc/sudoers.d/soia
 mkdir -p /home/soia
 chown -R soia:soia /home/soia
 
-# Imposta avvio della sessione SOIA all'accesso su tty1
+# Configure SOIA session autostart on tty1 login
 cat << 'SH' >> /home/soia/.bash_profile
 if [ -z "$WAYLAND_DISPLAY" ] && [ "$XDG_VTNR" = 1 ]; then
   if command -v labwc >/dev/null 2>&1; then
@@ -158,10 +158,10 @@ chown soia:soia /home/soia/.bash_profile
 EOF
 chmod +x config/hooks/live/01-create-soia-user.chroot
 
-# Bundle dell'applicazione SOIA dentro la cartella /opt/soia del live image
+# Bundle the SOIA application inside /opt/soia of the live image
 mkdir -p config/includes.chroot/opt/soia
 if [ -d "$WORK_DIR/../dist" ] && [ -d "$WORK_DIR/../dist-electron" ]; then
-    echo "[Info] Copia build SOIA compilata in /opt/soia..."
+    echo "[Info] Copying compiled SOIA build to /opt/soia..."
     cp -r "$WORK_DIR/../dist" config/includes.chroot/opt/soia/
     cp -r "$WORK_DIR/../dist-electron" config/includes.chroot/opt/soia/
     cp "$WORK_DIR/../package.json" config/includes.chroot/opt/soia/
@@ -170,7 +170,7 @@ if [ -d "$WORK_DIR/../dist" ] && [ -d "$WORK_DIR/../dist-electron" ]; then
     fi
 fi
 
-# Hook per installare le dipendenze di produzione ed Electron dentro chroot
+# Hook to install production dependencies and Electron inside chroot
 cat << 'EOF' > config/hooks/live/02-install-soia-deps.chroot
 #!/bin/sh
 if [ -d /opt/soia ]; then
@@ -182,16 +182,16 @@ fi
 EOF
 chmod +x config/hooks/live/02-install-soia-deps.chroot
 
-echo "[5/6] Esecuzione live-build (debootstrap + creazione squashfs + ISO)..."
+echo "[5/6] Running live-build (debootstrap + squashfs + ISO creation)..."
 lb build
 
-# Rilocazione dell'immagine creata
+# Relocate the generated image
 if [ -f live-image-amd64.hybrid.iso ]; then
     mv live-image-amd64.hybrid.iso "$OUTPUT_ISO"
 elif [ -f live-image-amd64.iso ]; then
     mv live-image-amd64.iso "$OUTPUT_ISO"
 fi
 
-echo "[6/6] Build completata!"
-echo "Immagine ISO generata con successo:"
+echo "[6/6] Build complete!"
+echo "ISO image generated successfully:"
 echo "-> $OUTPUT_ISO"

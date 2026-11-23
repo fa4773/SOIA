@@ -1,39 +1,39 @@
 #!/bin/bash
 # ==============================================================================
-# SOIA OS - Script Gestione Persistenza (Live Persistence Manager)
+# SOIA OS - Persistence Management Script (Live Persistence Manager)
 # ==============================================================================
 set -e
 
-echo "[SOIA] Inizializzazione modulo persistenza stile Tails..."
+echo "[SOIA] Initializing Tails-style persistence module..."
 
-# Verifica se il boot è avvenuto con flag persistence
+# Check if booted with the persistence flag
 if grep -q "persistence" /proc/cmdline; then
-    echo "[SOIA] Modalità persistenza attiva nel bootloader."
+    echo "[SOIA] Persistence mode active in bootloader."
     
-    # Ricerca partizione con etichetta 'persistence'
+    # Search for partition labeled 'persistence'
     PERSIST_DEV=$(blkid -L persistence || true)
     
     if [ -n "$PERSIST_DEV" ]; then
-        echo "[SOIA] Rilevata partizione di persistenza: $PERSIST_DEV"
+        echo "[SOIA] Detected persistence partition: $PERSIST_DEV"
         MOUNT_POINT="/mnt/soia-persistence"
         mkdir -p "$MOUNT_POINT"
         mount "$PERSIST_DEV" "$MOUNT_POINT" 2>/dev/null || true
         
         if [ ! -f "$MOUNT_POINT/persistence.conf" ]; then
-            echo "[SOIA] Creazione automatica di persistence.conf (/ union)..."
+            echo "[SOIA] Automatically creating persistence.conf (/ union)..."
             echo "/ union" > "$MOUNT_POINT/persistence.conf"
         fi
         
-        # Cartella per dati personali persistenti di SOIA
+        # Directory for SOIA persistent personal data
         mkdir -p "$MOUNT_POINT/home/soia/progetti"
         mkdir -p "$MOUNT_POINT/home/soia/.soia"
         chown -R 1000:1000 "$MOUNT_POINT/home/soia" 2>/dev/null || true
         
         umount "$MOUNT_POINT" 2>/dev/null || true
-        echo "[SOIA] Persistenza configurata con successo."
+        echo "[SOIA] Persistence configured successfully."
     else
-        echo "[SOIA] Nessuna partizione etichettata 'persistence' trovata. Sessione attiva in RAM."
+        echo "[SOIA] No partition labeled 'persistence' found. Session running in RAM."
     fi
 else
-    echo "[SOIA] Avvio in modalità volatile (RAM pura)."
+    echo "[SOIA] Booting in volatile mode (pure RAM)."
 fi

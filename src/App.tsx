@@ -9,7 +9,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { FileEntry, SystemInfo } from './types/soia';
 
 export const App: React.FC = () => {
-  // Rilevamento eventuale finestra staccata tramite URL query
+  // Detect detached window via URL query parameters
   const searchParams = new URLSearchParams(window.location.search);
   const detachedTabId = searchParams.get('detachedTab');
   const detachedTabType = searchParams.get('tabType');
@@ -24,7 +24,7 @@ export const App: React.FC = () => {
     },
     {
       id: 'tab-browser',
-      title: 'Browser Agentico',
+      title: 'Agentic Browser',
       type: 'browser',
       url: 'https://duckduckgo.com',
       closable: true,
@@ -32,7 +32,7 @@ export const App: React.FC = () => {
     },
     {
       id: 'tab-terminal',
-      title: 'Terminale Linux',
+      title: 'Linux Terminal',
       type: 'terminal',
       closable: true,
       detachable: true
@@ -46,7 +46,7 @@ export const App: React.FC = () => {
   const [securityProfile, setSecurityProfile] = useState<'strict' | 'balanced' | 'autonomous'>('balanced');
 
   useEffect(() => {
-    // Caricamento iniziale informazioni sistema e file
+    // Initial loading of system info and files
     const initData = async () => {
       if (window.soia) {
         try {
@@ -64,7 +64,7 @@ export const App: React.FC = () => {
 
     initData();
 
-    // Ascolto evento di riaggancio finestre staccate
+    // Listen for detached window reattach events
     const cleanupReattach = window.soia?.onTabReattached(({ tabId }) => {
       console.log(`[Tab Reattached] ${tabId}`);
     });
@@ -82,17 +82,17 @@ export const App: React.FC = () => {
   };
 
   const handleSelectTab = (id: string) => {
-    // Se la tab selezionata non è presente nell'elenco (ad es. chiusa precedentemente), riaprila
+    // If the selected tab is not in the list (e.g., previously closed), reopen it
     if (!tabs.some((t) => t.id === id)) {
       if (id === 'tab-browser') {
         setTabs((prev) => [
           ...prev,
-          { id: 'tab-browser', title: 'Browser Agentico', type: 'browser', closable: true, detachable: true }
+          { id: 'tab-browser', title: 'Agentic Browser', type: 'browser', closable: true, detachable: true }
         ]);
       } else if (id === 'tab-terminal') {
         setTabs((prev) => [
           ...prev,
-          { id: 'tab-terminal', title: 'Terminale Linux', type: 'terminal', closable: true, detachable: true }
+          { id: 'tab-terminal', title: 'Linux Terminal', type: 'terminal', closable: true, detachable: true }
         ]);
       }
     }
@@ -100,7 +100,7 @@ export const App: React.FC = () => {
   };
 
   const handleCloseTab = (id: string) => {
-    if (id === 'tab-0') return; // Tab 0 non è mai chiudibile
+    if (id === 'tab-0') return; // Tab 0 is never closable
     setTabs((prev) => prev.filter((t) => t.id !== id));
     if (activeTabId === id) {
       setActiveTabId('tab-0');
@@ -111,7 +111,7 @@ export const App: React.FC = () => {
     if (tab.id === 'tab-0') return;
     if (window.soia?.detachTab) {
       await window.soia.detachTab(tab);
-      // Rimuove temporaneamente dalla barra principale mentre è staccata
+      // Temporarily remove from the main bar while detached
       setTabs((prev) => prev.filter((t) => t.id !== tab.id));
       if (activeTabId === tab.id) {
         setActiveTabId('tab-0');
@@ -123,7 +123,7 @@ export const App: React.FC = () => {
     const newId = `tab-custom-${Date.now()}`;
     const newTab: TabItem = {
       id: newId,
-      title: 'Nuovo Terminale',
+      title: 'New Terminal',
       type: 'terminal',
       closable: true,
       detachable: true
@@ -149,8 +149,8 @@ export const App: React.FC = () => {
   };
 
   const handleCreateDoc = async (name?: string, content?: string) => {
-    const docName = name || `Nota_${Date.now().toString().slice(-4)}`;
-    const docContent = content || `Nuovo documento creato in SOIA OS il ${new Date().toLocaleString()}\n`;
+    const docName = name || `Note_${Date.now().toString().slice(-4)}`;
+    const docContent = content || `New document created in SOIA OS on ${new Date().toLocaleString()}\n`;
     if (window.soia?.createDocument) {
       await window.soia.createDocument(docName, docContent, 'doc');
       await refreshFiles();
@@ -174,11 +174,11 @@ export const App: React.FC = () => {
     if (window.soia?.installLinuxPackage) {
       window.soia.installLinuxPackage(pkg);
     }
-    // Mostra il terminale per seguire l'installazione
+    // Show terminal to follow installation progress
     handleSelectTab('tab-terminal');
   };
 
-  // Se questa finestra è una finestra staccata (popup indipendente)
+  // If this window is a detached window (independent popup)
   if (detachedTabId) {
     return (
       <div className="w-screen h-screen bg-zinc-950 flex flex-col overflow-hidden text-zinc-100">
@@ -187,7 +187,7 @@ export const App: React.FC = () => {
         {detachedTabType === 'editor' && (
           <DocumentViewerTab
             file={{
-              name: 'Finestra Indipendente',
+              name: 'Detached Window',
               isDirectory: false,
               path: '',
               extension: 'txt'
@@ -200,7 +200,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-zinc-950 font-sans select-none text-zinc-100">
-      {/* Sidebar Sinistra ChatGPT Desktop Style */}
+      {/* Left Sidebar (ChatGPT Desktop Style) */}
       <Sidebar
         activeTabId={activeTabId}
         onSelectTab={handleSelectTab}
@@ -212,7 +212,7 @@ export const App: React.FC = () => {
         systemInfo={systemInfo}
       />
 
-      {/* Area Principale: TabBar in alto + Content Pane a tutto schermo */}
+      {/* Main Area: Top TabBar + Fullscreen Content Pane */}
       <main className="flex-1 flex flex-col h-full overflow-hidden bg-zinc-950">
         <TabBar
           tabs={tabs}
@@ -237,21 +237,21 @@ export const App: React.FC = () => {
             />
           </div>
 
-          {/* Tab Browser Agentico */}
+          {/* Agentic Browser Tab */}
           {tabs.some((t) => t.id === 'tab-browser') && (
             <div className={`w-full h-full ${activeTabId === 'tab-browser' ? 'block' : 'hidden'}`}>
               <AgenticBrowser />
             </div>
           )}
 
-          {/* Tab Terminale Linux */}
+          {/* Linux Terminal Tab */}
           {tabs.some((t) => t.id === 'tab-terminal') && (
             <div className={`w-full h-full ${activeTabId === 'tab-terminal' ? 'block' : 'hidden'}`}>
               <TerminalTab />
             </div>
           )}
 
-          {/* Schede Documenti & Editor Aperti */}
+          {/* Open Document & Editor Tabs */}
           {tabs
             .filter((t) => t.type === 'editor')
             .map((tab) => (
@@ -265,7 +265,7 @@ export const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Modal Impostazioni OS & AI */}
+      {/* OS & AI Settings Modal */}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}

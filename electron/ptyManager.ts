@@ -46,12 +46,12 @@ export class PtyManager extends EventEmitter {
       });
 
       this.shellProcess.on('exit', (code) => {
-        this.emit('data', `\r\n[SOIA Shell terminata con codice: ${code}. Riavvio...]\r\n`);
+        this.emit('data', `\r\n[SOIA Shell exited with code: ${code}. Restarting...]\r\n`);
         setTimeout(() => this.initShell(), 1500);
       });
 
       this.shellProcess.on('error', (err) => {
-        this.emit('data', `\r\n[SOIA Shell Errore: ${err.message}]\r\n`);
+        this.emit('data', `\r\n[SOIA Shell Error: ${err.message}]\r\n`);
       });
 
       const initialMessage = this.isWindows
@@ -60,7 +60,7 @@ export class PtyManager extends EventEmitter {
 
       setTimeout(() => this.emit('data', initialMessage), 200);
     } catch (error) {
-      console.error('[PtyManager] Errore avvio shell:', error);
+      console.error('[PtyManager] Error starting shell:', error);
     }
   }
 
@@ -71,7 +71,7 @@ export class PtyManager extends EventEmitter {
   }
 
   public resize(_cols: number, _rows: number): void {
-    // Gestione ridimensionamento se supportato
+    // Handle resize if supported
   }
 
   public kill(): void {

@@ -45,7 +45,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="w-6 h-6 rounded-md bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center font-bold text-emerald-400 text-xs">
               SO
             </div>
-            <h2 className="font-semibold text-sm text-zinc-100">Impostazioni Sistema & AI</h2>
+            <h2 className="font-semibold text-sm text-zinc-100">System & AI Settings</h2>
           </div>
           <button
             onClick={onClose}
@@ -68,7 +68,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               }`}
             >
               <Bot size={15} />
-              <span>Modelli & AI</span>
+              <span>Models & AI</span>
             </button>
             <button
               onClick={() => setActiveTab('security')}
@@ -79,7 +79,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               }`}
             >
               <Shield size={15} />
-              <span>Sicurezza OS</span>
+              <span>OS Security</span>
             </button>
             <button
               onClick={() => setActiveTab('system')}
@@ -90,7 +90,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               }`}
             >
               <HardDrive size={15} />
-              <span>Risorse & Storage</span>
+              <span>Resources & Storage</span>
             </button>
             <button
               onClick={() => setActiveTab('expand')}
@@ -101,7 +101,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               }`}
             >
               <Layers size={15} />
-              <span>Espandi Linux</span>
+              <span>Expand Linux</span>
             </button>
           </div>
 
@@ -111,7 +111,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="space-y-4">
                 <h3 className="font-semibold text-sm text-zinc-100 flex items-center gap-1.5">
                   <Bot size={16} className="text-emerald-400" />
-                  Provider di Inferenza AI
+                  AI Inference Provider
                 </h3>
 
                 <div>
@@ -121,15 +121,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onChange={(e) => setAiProvider(e.target.value)}
                     className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-1.5 text-zinc-200 focus:outline-none focus:border-emerald-500"
                   >
-                    <option value="ollama">Ollama (Locale Offline / 100% Privato)</option>
-                    <option value="openai">OpenAI (API Cloud)</option>
-                    <option value="anthropic">Anthropic Claude (API Cloud)</option>
-                    <option value="gemini">Google Gemini (API Cloud)</option>
+                    <option value="ollama">Ollama (Local Offline / 100% Private)</option>
+                    <option value="openai">OpenAI (Cloud API)</option>
+                    <option value="anthropic">Anthropic Claude (Cloud API)</option>
+                    <option value="gemini">Google Gemini (Cloud API)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-zinc-400 mb-1 font-medium">Nome Modello</label>
+                  <label className="block text-zinc-400 mb-1 font-medium">Model Name</label>
                   <input
                     type="text"
                     value={modelName}
@@ -140,7 +140,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <div>
-                    <label className="block text-zinc-400 mb-1 font-medium">Temperatura ({temperature})</label>
+                    <label className="block text-zinc-400 mb-1 font-medium">Temperature ({temperature})</label>
                     <input
                       type="range"
                       min="0"
@@ -152,7 +152,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-zinc-400 mb-1 font-medium">Finestra Contesto (tokens)</label>
+                    <label className="block text-zinc-400 mb-1 font-medium">Context Window (tokens)</label>
                     <input
                       type="text"
                       value={contextWindow}
@@ -163,7 +163,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-300 text-[11px]">
-                  ✓ Modalità Live-First attiva: se Ollama è attivo su localhost:11434, SOIA eseguirà tutti i task agentici e di navigazione in locale senza connessione Internet.
+                  ✓ Live-First Mode active: if Ollama is running on localhost:11434, SOIA will execute all agentic and browsing tasks locally without an Internet connection.
                 </div>
               </div>
             )}
@@ -172,25 +172,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="space-y-4">
                 <h3 className="font-semibold text-sm text-zinc-100 flex items-center gap-1.5">
                   <Shield size={16} className="text-emerald-400" />
-                  Profili di Sicurezza & Policy Esecuzione
+                  Security Profiles & Execution Policy
                 </h3>
 
                 <div className="space-y-2">
                   {[
                     {
                       id: 'strict',
-                      name: 'Strict (Massima Protezione)',
-                      desc: 'Qualsiasi comando bash non di sola lettura richiede conferma interattiva dell\'utente.'
+                      name: 'Strict (Maximum Protection)',
+                      desc: 'Any non-read-only bash command requires interactive user confirmation.'
                     },
                     {
                       id: 'balanced',
-                      name: 'Balanced (Predefinito Consigliato)',
-                      desc: 'Esecuzione automatica dei comandi operativi e di navigazione; blocco e conferma obbligatoria per comandi distruttivi (rm, mkfs, dd).'
+                      name: 'Balanced (Recommended Default)',
+                      desc: 'Automatic execution of operational and browsing commands; blocks and requires confirmation for destructive commands (rm, mkfs, dd).'
                     },
                     {
                       id: 'autonomous',
-                      name: 'Autonomous (Piena Autonomia)',
-                      desc: 'L\'agente opera in piena autonomia per task prolungati o script di build.'
+                      name: 'Autonomous (Full Autonomy)',
+                      desc: 'The agent operates with full autonomy for long-running tasks or build scripts.'
                     }
                   ].map((p) => (
                     <div
@@ -219,35 +219,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="space-y-4">
                 <h3 className="font-semibold text-sm text-zinc-100 flex items-center gap-1.5">
                   <Cpu size={16} className="text-emerald-400" />
-                  Stato Hardware & Persistenza
+                  Hardware & Persistence Status
                 </h3>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 bg-zinc-900/60 border border-zinc-800 rounded-lg">
-                    <div className="text-zinc-500 text-[10px] uppercase font-semibold">Piattaforma</div>
+                    <div className="text-zinc-500 text-[10px] uppercase font-semibold">Platform</div>
                     <div className="font-bold text-zinc-200 mt-1">{systemInfo?.platform || 'Linux'}</div>
                     <div className="text-[10px] text-zinc-400">{systemInfo?.release}</div>
                   </div>
                   <div className="p-3 bg-zinc-900/60 border border-zinc-800 rounded-lg">
-                    <div className="text-zinc-500 text-[10px] uppercase font-semibold">Memoria RAM</div>
+                    <div className="text-zinc-500 text-[10px] uppercase font-semibold">RAM Memory</div>
                     <div className="font-bold text-zinc-200 mt-1">
                       {systemInfo?.usedMemoryMB || 0} / {systemInfo?.totalMemoryMB || 0} MB
                     </div>
                     <div className="text-[10px] text-zinc-400">
-                      Disponibile: {systemInfo?.freeMemoryMB || 0} MB
+                      Available: {systemInfo?.freeMemoryMB || 0} MB
                     </div>
                   </div>
                   <div className="p-3 bg-zinc-900/60 border border-zinc-800 rounded-lg">
-                    <div className="text-zinc-500 text-[10px] uppercase font-semibold">Processore</div>
-                    <div className="font-bold text-zinc-200 mt-1">{systemInfo?.cpus || 1} Core Logici</div>
+                    <div className="text-zinc-500 text-[10px] uppercase font-semibold">Processor</div>
+                    <div className="font-bold text-zinc-200 mt-1">{systemInfo?.cpus || 1} Logical Cores</div>
                     <div className="text-[10px] text-zinc-400 truncate">{systemInfo?.cpuModel}</div>
                   </div>
                   <div className="p-3 bg-zinc-900/60 border border-zinc-800 rounded-lg">
-                    <div className="text-zinc-500 text-[10px] uppercase font-semibold">Modalità Live</div>
+                    <div className="text-zinc-500 text-[10px] uppercase font-semibold">Live Mode</div>
                     <div className="font-bold text-zinc-200 mt-1">
-                      {systemInfo?.isLiveDebian ? 'Debian Live (RAM/USB)' : 'Host Locale'}
+                      {systemInfo?.isLiveDebian ? 'Debian Live (RAM/USB)' : 'Local Host'}
                     </div>
-                    <div className="text-[10px] text-zinc-400">Persistenza Stile Tails supportata</div>
+                    <div className="text-[10px] text-zinc-400">Tails-style Persistence supported</div>
                   </div>
                 </div>
               </div>
@@ -258,12 +258,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-sm text-zinc-100 flex items-center gap-1.5">
                     <Layers size={16} className="text-emerald-400" />
-                    Espandi Ambiente Linux (Package Manager)
+                    Expand Linux Environment (Package Manager)
                   </h3>
                 </div>
 
                 <p className="text-zinc-400 text-[11px]">
-                  Puoi installare al volo software desktop o interi ambienti grafici direttamente nel sistema Debian live o installato tramite il terminale integrato:
+                  You can install desktop software or full desktop environments on the fly directly into your live or installed Debian system via the integrated terminal:
                 </p>
 
                 <div className="grid grid-cols-2 gap-2.5">
@@ -271,8 +271,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     { name: 'XFCE Desktop Environment', pkg: 'xfce4 xfce4-goodies', type: 'DE' },
                     { name: 'KDE Plasma Desktop', pkg: 'kde-plasma-desktop', type: 'DE' },
                     { name: 'GNOME Shell Minimal', pkg: 'gnome-core', type: 'DE' },
-                    { name: 'LibreOffice Suite Completa', pkg: 'libreoffice libreoffice-l10n-it', type: 'App' },
-                    { name: 'GIMP & Inkscape', pkg: 'gimp inkscape', type: 'Grafica' },
+                    { name: 'LibreOffice Full Suite', pkg: 'libreoffice', type: 'App' },
+                    { name: 'GIMP & Inkscape', pkg: 'gimp inkscape', type: 'Graphics' },
                     { name: 'Build Essential & Clang', pkg: 'build-essential clang cmake', type: 'Dev' }
                   ].map((item, idx) => (
                     <div
@@ -296,7 +296,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         className="mt-3 w-full py-1.5 px-2 rounded bg-zinc-800 hover:bg-emerald-600 hover:text-white text-zinc-200 flex items-center justify-center gap-1.5 transition-colors font-medium text-[11px]"
                       >
                         <Download size={12} />
-                        <span>Installa nel Terminale</span>
+                        <span>Install in Terminal</span>
                       </button>
                     </div>
                   ))}
@@ -304,7 +304,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 <div className="flex items-center gap-2 p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-300 text-[11px]">
                   <AlertTriangle size={15} className="shrink-0" />
-                  <span>I pacchetti installati verranno preservati automaticamente se la persistenza è attiva.</span>
+                  <span>Installed packages will be automatically preserved if persistence is active.</span>
                 </div>
               </div>
             )}
@@ -317,7 +317,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             onClick={onClose}
             className="px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition-colors"
           >
-            Chiudi
+            Close
           </button>
         </div>
       </div>

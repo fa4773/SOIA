@@ -26,9 +26,9 @@ export class WindowTabsManager {
   }
 
   public detachTab(tab: TabDefinition, bounds?: { x: number; y: number; width: number; height: number }): boolean {
-    // La Tab 0 / harness desktop è immutabile e non staccabile
+    // Tab 0 / desktop harness is immutable and cannot be detached
     if (tab.id === 'tab-0' || tab.type === 'harness' || !tab.detachable) {
-      console.warn(`[WindowTabsManager] Tentativo di staccare la tab fissa: ${tab.id}`);
+      console.warn(`[WindowTabsManager] Attempted to detach pinned tab: ${tab.id}`);
       return false;
     }
 
@@ -63,7 +63,7 @@ export class WindowTabsManager {
 
     detachedWin.on('closed', () => {
       this.detachedWindows.delete(tab.id);
-      // Notifica la finestra principale che la finestra staccata è stata chiusa o riagganciata
+      // Notify the main window that the detached window was closed or reattached
       if (this.mainWindow && !this.mainWindow.isDestroyed()) {
         this.mainWindow.webContents.send('soia:tab-reattached', { tabId: tab.id });
       }

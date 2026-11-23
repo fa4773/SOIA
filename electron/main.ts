@@ -67,16 +67,16 @@ function createWindow(): void {
   });
 }
 
-// Inoltro output del terminale (PTY) alla finestra principale
+// Forward terminal (PTY) output to the main window
 ptyManager.on('data', (data: string) => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('soia:shell-output', data);
   }
 });
 
-// Registrazione IPC
+// Register IPC handlers
 function registerIpcHandlers(): void {
-  // Informazioni di sistema per widget & settings
+  // System info for widgets & settings
   ipcMain.handle('soia:get-system-info', async () => {
     const totalMem = Math.round(os.totalmem() / (1024 * 1024));
     const freeMem = Math.round(os.freemem() / (1024 * 1024));
@@ -103,7 +103,7 @@ function registerIpcHandlers(): void {
     ptyManager.write(input);
   });
 
-  // Gestione distacco schede (Drag-out)
+  // Detachable tab management (Drag-out)
   ipcMain.handle('soia:detach-tab', async (_event, tab: TabDefinition) => {
     return windowTabsManager.detachTab(tab);
   });
@@ -112,7 +112,7 @@ function registerIpcHandlers(): void {
     return windowTabsManager.reattachTab(tabId);
   });
 
-  // Gestione profilo di sicurezza
+  // Security profile management
   ipcMain.handle('soia:get-security-profile', async () => {
     return securityPolicy.getProfile();
   });
@@ -126,7 +126,7 @@ function registerIpcHandlers(): void {
     return securityPolicy.evaluateCommand(command);
   });
 
-  // File System & Creazione Documenti (.doc / .docx / .txt)
+  // File System & Document Creation (.doc / .docx / .txt)
   ipcMain.handle('soia:fs-list', async (_event, targetPath?: string) => {
     const dir = targetPath || getDocumentsDir();
     try {
@@ -152,8 +152,8 @@ function registerIpcHandlers(): void {
 
     try {
       if (format === 'doc') {
-        // Documento RTF/Word compatibile standard generabile ovunque
-        const rtfHeader = `{\\rtf1\\ansi\\ansicpg1252\\deff0\\nouicompat\\deflang1040{\\fonttbl{\\f0\\fnil\\fcharset0 Segoe UI;}{\\f1\\fnil\\fcharset0 Arial;}}\r\n`;
+        // Standard RTF/Word-compatible document generatable anywhere
+        const rtfHeader = `{\\rtf1\\ansi\\ansicpg1252\\deff0\\nouicompat\\deflang1033{\\fonttbl{\\f0\\fnil\\fcharset0 Segoe UI;}{\\f1\\fnil\\fcharset0 Arial;}}\r\n`;
         const rtfBody = `{\\*\\generator SOIA Document Engine;}\\viewkind4\\uc1\r\n\\pard\\b\\fs28 SOIA Document: ${cleanName}\\b0\\fs20\\par\\par\r\n${content.replace(/\n/g, '\\par ')}\r\n}`;
         fs.writeFileSync(filePath, rtfHeader + rtfBody, 'utf-8');
       } else {
@@ -168,7 +168,7 @@ function registerIpcHandlers(): void {
   ipcMain.handle('soia:fs-read', async (_event, filePath: string) => {
     try {
       if (!fs.existsSync(filePath)) {
-        return { success: false, error: 'File non trovato' };
+        return { success: false, error: 'File not found' };
       }
       const content = fs.readFileSync(filePath, 'utf-8');
       return { success: true, content };
@@ -177,11 +177,11 @@ function registerIpcHandlers(): void {
     }
   });
 
-  // Espandi ambiente Linux (installazione Desktop Environment o pacchetti)
+  // Expand Linux environment (install Desktop Environment or packages)
   ipcMain.on('soia:install-package', (_event, packageName: string) => {
     const cmd = os.platform() === 'linux'
       ? `sudo apt-get update && sudo apt-get install -y ${packageName}\n`
-      : `Write-Host "Installazione '${packageName}' simulata in ambiente di sviluppo Windows"\n`;
+      : `Write-Host "Simulated installation of '${packageName}' in Windows development environment"\n`;
     ptyManager.write(cmd);
   });
 

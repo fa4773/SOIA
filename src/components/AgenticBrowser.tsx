@@ -21,7 +21,7 @@ export const AgenticBrowser: React.FC<AgenticBrowserProps> = ({
 }) => {
   const [url, setUrl] = useState(initialUrl);
   const [inputUrl, setInputUrl] = useState(initialUrl);
-  const [pageTitle] = useState('Browser Agentico SOIA');
+  const [pageTitle] = useState('SOIA Agentic Browser');
   const [agentPanelOpen, setAgentPanelOpen] = useState(true);
   const [extractedData, setExtractedData] = useState<string | null>(null);
   const [isReadingPage, setIsReadingPage] = useState(false);
@@ -46,7 +46,7 @@ export const AgenticBrowser: React.FC<AgenticBrowserProps> = ({
     setIsReadingPage(true);
     setTimeout(() => {
       setExtractedData(
-        `[SOIA Page Reader - ${new Date().toLocaleTimeString()}]\nURL: ${url}\n\nContenuto Principale:\nLa pagina "${pageTitle}" è stata letta ed analizzata con successo. I dati testuali e i form interattivi sono ora mappati e disponibili per l'Agent Harness.`
+        `[SOIA Page Reader - ${new Date().toLocaleTimeString()}]\nURL: ${url}\n\nMain Content:\nThe page "${pageTitle}" has been read and analyzed successfully. Text data and interactive forms are now mapped and available to the Agent Harness.`
       );
       setIsReadingPage(false);
     }, 700);
@@ -59,14 +59,14 @@ export const AgenticBrowser: React.FC<AgenticBrowserProps> = ({
         <div className="flex items-center gap-1">
           <button
             onClick={() => webviewRef.current?.goBack?.()}
-            title="Indietro"
+            title="Back"
             className="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
           >
             <ArrowLeft size={15} />
           </button>
           <button
             onClick={() => webviewRef.current?.goForward?.()}
-            title="Avanti"
+            title="Forward"
             className="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
           >
             <ArrowRight size={15} />
@@ -79,7 +79,7 @@ export const AgenticBrowser: React.FC<AgenticBrowserProps> = ({
                 setUrl(url + '');
               }
             }}
-            title="Ricarica"
+            title="Reload"
             className="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
           >
             <RotateCw size={15} />
@@ -94,7 +94,7 @@ export const AgenticBrowser: React.FC<AgenticBrowserProps> = ({
               type="text"
               value={inputUrl}
               onChange={(e) => setInputUrl(e.target.value)}
-              placeholder="Cerca o inserisci indirizzo web..."
+              placeholder="Search or enter a web address..."
               className="flex-1 bg-transparent text-zinc-200 focus:outline-none"
             />
             <button type="submit" className="text-zinc-400 hover:text-zinc-200">
@@ -118,7 +118,7 @@ export const AgenticBrowser: React.FC<AgenticBrowserProps> = ({
 
         <button
           onClick={() => window.soia?.openExternal(url)}
-          title="Apri nel browser esterno"
+          title="Open in external browser"
           className="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200"
         >
           <ExternalLink size={15} />
@@ -142,7 +142,7 @@ export const AgenticBrowser: React.FC<AgenticBrowserProps> = ({
             <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
               <span className="font-semibold text-zinc-200 flex items-center gap-1.5">
                 <Sparkles size={14} className="text-emerald-400" />
-                Automazione Web AI
+                AI Web Automation
               </span>
               <span className="text-[10px] text-zinc-500">Chromium Mode</span>
             </div>
@@ -154,39 +154,39 @@ export const AgenticBrowser: React.FC<AgenticBrowserProps> = ({
                 className="w-full py-2 px-3 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 flex items-center gap-2 transition-colors font-medium"
               >
                 <FileSearch size={14} className="text-blue-400" />
-                <span>{isReadingPage ? 'Analisi in corso...' : 'Leggi & Riassumi Pagina'}</span>
+                <span>{isReadingPage ? 'Analyzing...' : 'Read & Summarize Page'}</span>
               </button>
 
               <button
                 onClick={() => {
                   setExtractedData(
-                    `[Form Filler]\nSelettori modulo intercettati su ${url}. L'agent è pronto a compilare i campi richiesti.`
+                    `[Form Filler]\nForm selectors detected on ${url}. The agent is ready to fill in the requested fields.`
                   );
                 }}
                 className="w-full py-2 px-3 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 flex items-center gap-2 transition-colors font-medium"
               >
                 <MousePointer size={14} className="text-emerald-400" />
-                <span>Interagisci con Form / Click</span>
+                <span>Interact with Form / Click</span>
               </button>
             </div>
 
             {/* Extracted Output Area */}
             <div className="flex-1 flex flex-col min-h-0 bg-zinc-900/70 border border-zinc-800 rounded-lg p-2.5 space-y-2 overflow-hidden">
               <div className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
-                <span>Dati Estratti dall'Agent</span>
+                <span>Agent Extracted Data</span>
                 {extractedData && (
                   <button
                     onClick={() => setExtractedData(null)}
                     className="text-zinc-500 hover:text-zinc-300 text-[10px]"
                   >
-                    Cancella
+                    Clear
                   </button>
                 )}
               </div>
               <div className="flex-1 overflow-y-auto text-[11px] text-zinc-300 whitespace-pre-wrap font-mono custom-scrollbar">
                 {extractedData || (
                   <span className="text-zinc-600 italic">
-                    Nessun dato estratto. Clicca "Leggi & Riassumi Pagina" per iniziare la navigazione agentica guidata.
+                    No data extracted yet. Click "Read & Summarize Page" to start guided agentic browsing.
                   </span>
                 )}
               </div>

@@ -1,109 +1,109 @@
 # SOIA OS (Synthetic Operator & Intelligent Agent)
 
-> **Sistema Operativo Linux Autonomo (Debian Live / Installabile) con Harness Desktop Agentico a Schermo Intero.**
+> **Autonomous Linux Operating System (Debian Live / Installable) with a Fullscreen Agentic Desktop Harness.**
 
-SOIA trasforma un computer in una postazione di lavoro interamente guidata dall'Intelligenza Artificiale. Il Desktop tradizionale (barre delle applicazioni, desktop clutter) è sostituito nativamente da un **Harness Multitasking Agentico** a schermo intero (basato su Electron, Chromium embedded, React, TypeScript e Tailwind CSS) capace di orchestrare il sistema operativo, navigare sul web, eseguire shell e produrre documenti.
+SOIA turns any computer into an AI-driven workstation. The traditional desktop (taskbars, desktop clutter) is natively replaced by a fullscreen **Agentic Multitasking Harness** (built on Electron, embedded Chromium, React, TypeScript, and Tailwind CSS) capable of orchestrating the operating system, browsing the web, running shell commands, and producing documents.
 
 ---
 
-## 🏗️ Architettura del Sistema
+## 🏗️ System Architecture
 
 ```
 SOIA/
-├── linux-iso/                  # Infrastruttura di boot, kernel e Debian Live ISO
-│   ├── build-debian-iso.sh     # Script live-build completo (kernel, labwc, pandoc, libreoffice)
+├── linux-iso/                  # Boot infrastructure, kernel, and Debian Live ISO
+│   ├── build-debian-iso.sh     # Complete live-build script (kernel, labwc, pandoc, libreoffice)
 │   ├── grub/
-│   │   └── grub.cfg            # Menu BIOS/UEFI: RAM pura, Persistenza, Installer, Ripristino
+│   │   └── grub.cfg            # BIOS/UEFI menu: Pure RAM, Persistence, Installer, Recovery
 │   ├── session/
-│   │   ├── labwc-autostart     # Wayland compositor minimale (lancio Harness a schermo pieno)
-│   │   └── setup-persistence.sh# Gestione partizione persistence stile Tails (/ union)
+│   │   ├── labwc-autostart     # Minimal Wayland compositor (launches fullscreen Harness)
+│   │   └── setup-persistence.sh# Tails-style persistence partition management (/ union)
 │   └── installer/
-│       └── soia-install.sh     # Setup guidato su SSD/NVMe interno o chiavetta USB
+│       └── soia-install.sh     # Guided setup on internal SSD/NVMe or USB drive
 │
-├── electron/                   # Backend Desktop & Host Bridge (Main Process)
-│   ├── main.ts                 # Lifecycle finestra a tutto schermo, IPC handler, FS bridge
-│   ├── preload.ts              # ContextBridge sicuro (window.soia)
-│   ├── windowTabs.ts           # Gestione finestre staccabili (drag-out / pop-out)
-│   ├── ptyManager.ts           # Ponte shell PTY nativo (Linux bash / Windows powershell dev)
-│   └── securityPolicy.ts       # Profili Strict, Balanced, Autonomous
+├── electron/                   # Desktop Backend & Host Bridge (Main Process)
+│   ├── main.ts                 # Fullscreen window lifecycle, IPC handlers, FS bridge
+│   ├── preload.ts              # Secure ContextBridge (window.soia)
+│   ├── windowTabs.ts           # Detachable tab window management (drag-out / pop-out)
+│   ├── ptyManager.ts           # Native PTY shell bridge (Linux bash / Windows powershell dev)
+│   └── securityPolicy.ts       # Strict, Balanced, Autonomous security profiles
 │
-├── src/                        # Interfaccia Utente Harness (ChatGPT Desktop / Codex Style)
+├── src/                        # Harness User Interface (ChatGPT Desktop / Codex Style)
 │   ├── components/
-│   │   ├── Sidebar.tsx         # Chat recenti, File & Project Browser, stato CPU/RAM
-│   │   ├── TabBar.tsx          # Tab 0 bloccata (Desktop), schede staccabili, nuova scheda
-│   │   ├── AgentHarnessChat.tsx# Tab 0: Chat multimodale, visualizzazione tool calls, log
-│   │   ├── AgenticBrowser.tsx  # Browser Chromium embedded (<webview>) con controlli AI
-│   │   ├── TerminalTab.tsx     # Terminale xterm.js collegato alla shell reale
-│   │   ├── DocumentViewerTab.tsx# Editor per documenti (.doc, .txt, note)
-│   │   └── SettingsModal.tsx   # Configurazione AI, sicurezza e "Espandi Ambiente Linux"
-│   ├── types/soia.d.ts         # Definizioni TypeScript type-safe per il bridge SOIA
-│   ├── App.tsx                 # Root component e router finestre staccate
-│   └── index.css               # Stili globali Tailwind & scorrimento scuro
+│   │   ├── Sidebar.tsx         # Recent chats, File & Project Browser, CPU/RAM status
+│   │   ├── TabBar.tsx          # Pinned Tab 0 (Desktop), detachable tabs, new tab
+│   │   ├── AgentHarnessChat.tsx# Tab 0: Multimodal chat, tool call visualization, logs
+│   │   ├── AgenticBrowser.tsx  # Embedded Chromium browser (<webview>) with AI controls
+│   │   ├── TerminalTab.tsx     # xterm.js terminal connected to the real shell
+│   │   ├── DocumentViewerTab.tsx# Document editor (.doc, .txt, notes)
+│   │   └── SettingsModal.tsx   # AI configuration, security, and "Expand Linux Environment"
+│   ├── types/soia.d.ts         # Type-safe TypeScript definitions for the SOIA bridge
+│   ├── App.tsx                 # Root component and detached window router
+│   └── index.css               # Global Tailwind styles & dark scrollbars
 │
-├── .antigravity/settings.json  # Parametri di sistema SOIA
-└── package.json                # Configurazione Electron, Vite e dipendenze
+├── .antigravity/settings.json  # SOIA system parameters
+└── package.json                # Electron, Vite configuration, and dependencies
 ```
 
 ---
 
-## 🚀 Modalità di Avvio e Installazione (Linux ISO)
+## 🚀 Boot & Installation Modes (Linux ISO)
 
-L'immagine ISO generata da `linux-iso/build-debian-iso.sh` supporta boot universale UEFI e Legacy BIOS:
+The ISO image generated by `linux-iso/build-debian-iso.sh` supports universal UEFI and Legacy BIOS boot:
 
-1. **Avvia SOIA Live (RAM - Nessuna Traccia)**:
-   - Il sistema viene caricato interamente in memoria RAM (`toram`).
-   - Spegnendo il computer non rimane alcuna traccia sul disco.
-2. **Avvia SOIA Live con Persistenza (Stile Tails)**:
-   - Monta automaticamente una partizione formattata in ext4 con etichetta `persistence` (crittografata LUKS o in chiaro).
-   - Conserva file personali, chiavi API, impostazioni e pacchetti installati.
-3. **Installa SOIA su Disco o USB**:
-   - Avvia l'installer interattivo (`soia-install.sh`) per partizionare GPT, configurare EFI, root ext4 e persistenza, rendendo SOIA il sistema operativo permanente del PC.
-4. **Modalità Ripristino**:
-   - Shell di emergenza root con driver video di sicurezza (`nomodeset`).
+1. **Boot SOIA Live (RAM - No Trace)**:
+   - The system is loaded entirely into RAM (`toram`).
+   - Turning off the computer leaves zero trace on disk.
+2. **Boot SOIA Live with Persistence (Tails Style)**:
+   - Automatically mounts an ext4-formatted partition labeled `persistence` (LUKS-encrypted or unencrypted).
+   - Preserves personal files, API keys, settings, and installed packages.
+3. **Install SOIA to Disk or USB**:
+   - Launches the interactive installer (`soia-install.sh`) to partition GPT, configure EFI, ext4 root, and persistence, making SOIA the permanent operating system of the PC.
+4. **Recovery Mode**:
+   - Emergency root shell with safe video drivers (`nomodeset`).
 
 ---
 
-## ⚡ Caratteristiche dell'Harness Agentico
+## ⚡ Agentic Harness Features
 
-* **Desktop Unificato (Tab 0 Fissa)**:
-  - La scheda principale funge da desktop dell'OS: non può essere chiusa né staccata accidentalmente.
-  - Offre un'interfaccia conversazionale multimodale con trasparenza totale sulle azioni di sistema (*tool calls*, comandi eseguiti, file generati).
-* **Schede Staccabili (Detachable Tabs)**:
-  - Le schede Browser, Terminale e Documenti possono essere staccate in finestre indipendenti con un solo clic o trascinandole, con sincronizzazione istantanea.
-* **Browser Agentico Integrato (Stile Comet)**:
-  - Basato su Chromium embedded (`<webview>`).
-  - Consente all'agente di leggere il contenuto della pagina, estrarre informazioni e interagire con i form web.
-* **Terminale Nativo PTY**:
-  - Collegamento diretto a `/bin/bash` (su Linux) e trasparente su `powershell.exe` (su Windows in fase di sviluppo).
+* **Unified Desktop (Pinned Tab 0)**:
+  - The main tab acts as the OS desktop: it cannot be closed or accidentally detached.
+  - Provides a multimodal conversational interface with full transparency over system actions (*tool calls*, executed commands, generated files).
+* **Detachable Tabs**:
+  - Browser, Terminal, and Document tabs can be detached into independent windows with a single click or by dragging, with instant synchronization.
+* **Integrated Agentic Browser (Comet Style)**:
+  - Powered by embedded Chromium (`<webview>`).
+  - Allows the agent to read page content, extract information, and interact with web forms.
+* **Native PTY Terminal**:
+  - Direct connection to `/bin/bash` (on Linux) and seamlessly to `powershell.exe` (on Windows during development).
 * **Document Engine**:
-  - Creazione ed esportazione rapida di file `.doc`, `.txt` e note nel file system.
-* **Pannello "Espandi Ambiente Linux"**:
-  - Installazione con 1 clic tramite `apt` di ambienti desktop alternativi (XFCE, KDE Plasma, GNOME) o suite produttive (LibreOffice, VS Code, GIMP).
+  - Fast creation and export of `.doc`, `.txt`, and note files in the file system.
+* **"Expand Linux Environment" Panel**:
+  - 1-click `apt` installation of alternative desktop environments (XFCE, KDE Plasma, GNOME) or productivity suites (LibreOffice, VS Code, GIMP).
 
 ---
 
-## 🛠️ Sviluppo Locale su Windows
+## 🛠️ Local Development on Windows
 
-Durante lo sviluppo su Windows, l'Harness funziona in modalità compatibile sfruttando PowerShell e la simulazione sicura del file system:
+During Windows development, the Harness runs in compatibility mode using PowerShell and safe filesystem simulation:
 
 ```bash
-# 1. Installazione dipendenze
+# 1. Install dependencies
 npm install
 
-# 2. Avvio dell'ambiente di sviluppo con Electron + Vite Hot-Reload
+# 2. Start the development environment with Electron + Vite Hot-Reload
 npm run dev
 
-# 3. Verifica compilazione TypeScript e bundle
+# 3. Verify TypeScript compilation and bundle
 npm run build
 ```
 
 ---
 
-## 📦 Generazione della ISO Debian (su macchina Linux o VM)
+## 📦 Building the Debian ISO (on a Linux machine or VM)
 
 ```bash
 cd linux-iso
 sudo ./build-debian-iso.sh
 ```
 
-La ISO pronta per essere scritta su chiavetta USB con `dd` verrà salvata in `linux-iso/soia-os-latest-amd64.iso`.
+The ready-to-flash ISO (writable to a USB drive with `dd`) will be saved to `linux-iso/soia-os-latest-amd64.iso`.

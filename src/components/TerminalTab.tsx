@@ -44,12 +44,12 @@ export const TerminalTab: React.FC<TerminalTabProps> = () => {
     xtermInstance.current = term;
     fitAddon.current = fit;
 
-    // Ascolto input da tastiera dell'utente e invio via IPC
+    // Listen for user keyboard input and send via IPC
     term.onData((data) => {
       window.soia?.sendShellInput(data);
     });
 
-    // Ascolto output dal processo shell principale
+    // Listen for output from the main shell process
     const cleanupListener = window.soia?.onShellOutput((data) => {
       term.write(data);
     });
@@ -83,7 +83,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = () => {
       <div className="h-10 px-4 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between text-xs">
         <div className="flex items-center gap-2">
           <TerminalIcon size={15} className="text-emerald-400" />
-          <span className="font-semibold text-zinc-200">Terminale di Sistema SOIA (Native PTY)</span>
+          <span className="font-semibold text-zinc-200">SOIA System Terminal (Native PTY)</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -111,7 +111,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = () => {
           </button>
           <button
             onClick={handleClear}
-            title="Pulisci terminale"
+            title="Clear terminal"
             className="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors ml-2"
           >
             <Trash2 size={14} />
