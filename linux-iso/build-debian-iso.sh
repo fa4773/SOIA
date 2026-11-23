@@ -129,10 +129,17 @@ cp "$WORK_DIR/grub/grub.cfg" config/includes.binary/boot/grub/grub.cfg
 mkdir -p config/hooks/live
 cat << 'EOF' > config/hooks/live/01-create-soia-user.chroot
 #!/bin/sh
-useradd -m -s /bin/bash -G sudo,audio,video,seat,netdev soia || true
+set -e
+if ! id -u soia >/dev/null 2>&1; then
+  useradd -m -s /bin/bash -G sudo,audio,video,netdev soia
+fi
+for grp in seat _seatd plugdev render input; do
+  getent group "$grp" >/dev/null 2>&1 && usermod -aG "$grp" soia || true
+done
 echo "soia:soia" | chpasswd
 echo "soia ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/soia
 chmod 0440 /etc/sudoers.d/soia
+mkdir -p /home/soia
 chown -R soia:soia /home/soia
 
 # Imposta avvio della sessione SOIA all'accesso su tty1
