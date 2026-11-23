@@ -23,7 +23,7 @@ fi
 # Installa prerequisiti di compilazione live-build
 echo "[1/6] Verifica dipendenze di build sull'host Debian..."
 apt-get update -y
-apt-get install -y live-build debootstrap squashfs-tools xorriso grub-pc-bin grub-efi-amd64-bin rsync curl
+apt-get install -y live-build debootstrap squashfs-tools xorriso grub-pc-bin grub-efi-amd64-bin dosfstools mtools rsync curl
 
 # Pulizia build directory precedente
 rm -rf "$BUILD_DIR"
@@ -163,12 +163,13 @@ if [ -d "$WORK_DIR/../dist" ] && [ -d "$WORK_DIR/../dist-electron" ]; then
     fi
 fi
 
-# Hook per installare le dipendenze di produzione di SOIA dentro chroot
+# Hook per installare le dipendenze di produzione ed Electron dentro chroot
 cat << 'EOF' > config/hooks/live/02-install-soia-deps.chroot
 #!/bin/sh
 if [ -d /opt/soia ]; then
     cd /opt/soia
     npm install --omit=dev --no-audit --no-fund || true
+    npm install electron --no-save --no-audit --no-fund || true
     chown -R soia:soia /opt/soia
 fi
 EOF
