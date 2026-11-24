@@ -182,6 +182,26 @@ fi
 EOF
 chmod +x config/hooks/live/02-install-soia-deps.chroot
 
+# Binary hook: ensure /live/vmlinuz and /live/initrd.img exist as regular files
+# (required by GRUB and FAT32 USB extraction in Rufus ISO mode)
+cat << 'EOF' > config/hooks/live/99-fix-live-kernel.hook.binary
+#!/bin/sh
+set -e
+echo "[SOIA] Verifying kernel and initrd files in live/..."
+if [ -d live ]; then
+    VMLINUZ=$(ls live/vmlinuz-* 2>/dev/null | head -n 1 || true)
+    INITRD=$(ls live/initrd.img-* 2>/dev/null | head -n 1 || true)
+    if [ -n "$VMLINUZ" ] && [ ! -f live/vmlinuz ]; then
+        cp -f "$VMLINUZ" live/vmlinuz
+    fi
+    if [ -n "$INITRD" ] && [ ! -f live/initrd.img ]; then
+        cp -f "$INITRD" live/initrd.img
+    fi
+    ls -lh live/
+fi
+EOF
+chmod +x config/hooks/live/99-fix-live-kernel.hook.binary
+
 echo "[5/6] Running live-build (debootstrap + squashfs + ISO creation)..."
 lb build
 
