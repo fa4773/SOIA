@@ -69,6 +69,11 @@ cage
 sway
 xwayland
 seatd
+dbus-user-session
+libgl1-mesa-dri
+libegl1
+libgles2
+fonts-dejavu-core
 pipewire
 wireplumber
 alacritty
@@ -101,6 +106,14 @@ libatk-bridge2.0-0
 libgtk-3-0
 libgbm1
 libdrm2
+libx11-xcb1
+libxcb-dri3-0
+libxss1
+libxtst6
+libxshmfence1
+libxcomposite1
+libxdamage1
+libxrandr2
 EOF
 
 # Chroot customization: Live user 'soia', autologin
@@ -117,6 +130,11 @@ mkdir -p config/includes.chroot/usr/local/bin
 cp "$WORK_DIR/session/labwc-autostart" config/includes.chroot/usr/local/bin/soia-autostart
 cp "$WORK_DIR/session/setup-persistence.sh" config/includes.chroot/usr/local/bin/
 cp "$WORK_DIR/installer/soia-install.sh" config/includes.chroot/usr/local/bin/
+# Strip Windows CRLF line endings defensively so scripts always run on Linux
+sed -i 's/\r$//' \
+  config/includes.chroot/usr/local/bin/soia-autostart \
+  config/includes.chroot/usr/local/bin/setup-persistence.sh \
+  config/includes.chroot/usr/local/bin/soia-install.sh
 chmod +x config/includes.chroot/usr/local/bin/soia-autostart
 chmod +x config/includes.chroot/usr/local/bin/setup-persistence.sh
 chmod +x config/includes.chroot/usr/local/bin/soia-install.sh
@@ -124,6 +142,7 @@ chmod +x config/includes.chroot/usr/local/bin/soia-install.sh
 # Copy custom GRUB menu into includes.binary (without overwriting system templates)
 mkdir -p config/includes.binary/boot/grub
 cp "$WORK_DIR/grub/grub.cfg" config/includes.binary/boot/grub/grub.cfg
+sed -i 's/\r$//' config/includes.binary/boot/grub/grub.cfg
 
 # Hook to create the 'soia' user with passwordless sudo
 mkdir -p config/hooks/live
@@ -142,15 +161,28 @@ chmod 0440 /etc/sudoers.d/soia
 mkdir -p /home/soia
 chown -R soia:soia /home/soia
 
-# Configure SOIA session autostart on tty1 login
+# Configure SOIA session autostart on tty1 login (with Safe Graphics & shell fallback)
 cat << 'SH' >> /home/soia/.bash_profile
-if [ -z "$WAYLAND_DISPLAY" ] && [ "$XDG_VTNR" = 1 ]; then
-  if command -v labwc >/dev/null 2>&1; then
-    exec labwc
-  elif command -v cage >/dev/null 2>&1; then
-    exec cage -- /usr/local/bin/soia-autostart
-  else
-    exec sway
+if [ -z "$WAYLAND_DISPLAY" ] && [ "$XDG_VTNR" = "1" ]; then
+  if [ -z "$XDG_RUNTIME_DIR" ]; then
+    export XDG_RUNTIME_DIR="/tmp/soia-runtime-$(id -u)"
+    mkdir -p "$XDG_RUNTIME_DIR"
+    chmod 700 "$XDG_RUNTIME_DIR"
+  fi
+  if grep -q "nomodeset" /proc/cmdline 2>/dev/null; then
+    export WLR_RENDERER=pixman
+    export WLR_NO_HARDWARE_CURSORS=1
+    export LIBGL_ALWAYS_SOFTWARE=1
+  fi
+  echo "[SOIA] Avvio sessione grafica Wayland..."
+  if command -v cage >/dev/null 2>&1; then
+    cage -s -- /usr/local/bin/soia-autostart 2>/tmp/soia-session.log || {
+      echo "[SOIA] Errore durante l'avvio grafico con cage. Log: /tmp/soia-session.log"
+      tail -n 20 /tmp/soia-session.log 2>/dev/null || true
+      echo "[SOIA] Shell di emergenza attiva. Esegui 'cat /tmp/soia-session.log' per dettagli."
+    }
+  elif command -v sway >/dev/null 2>&1; then
+    sway 2>/tmp/soia-session.log || true
   fi
 fi
 SH
@@ -178,6 +210,10 @@ if [ -d /opt/soia ]; then
     npm install --omit=dev --no-audit --no-fund || true
     npm install electron --no-save --no-audit --no-fund || true
     chown -R soia:soia /opt/soia
+    if [ -f /opt/soia/node_modules/electron/dist/chrome-sandbox ]; then
+        chown root:root /opt/soia/node_modules/electron/dist/chrome-sandbox
+        chmod 4755 /opt/soia/node_modules/electron/dist/chrome-sandbox
+    fi
 fi
 EOF
 chmod +x config/hooks/live/02-install-soia-deps.chroot
