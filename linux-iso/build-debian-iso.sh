@@ -116,10 +116,10 @@ libxdamage1
 libxrandr2
 EOF
 
-# Chroot customization: Live user 'soia', autologin
+# Chroot customization: Live user 'soia', autologin (zz- prefix wins over live-config)
 echo "[4/6] Configuring user, Wayland session, and permissions..."
 mkdir -p config/includes.chroot/etc/systemd/system/getty@tty1.service.d
-cat << 'EOF' > config/includes.chroot/etc/systemd/system/getty@tty1.service.d/autologin.conf
+cat << 'EOF' > config/includes.chroot/etc/systemd/system/getty@tty1.service.d/zz-soia-autologin.conf
 [Service]
 ExecStart=
 ExecStart=-/sbin/agetty --autologin soia --noclear %I $TERM
@@ -145,10 +145,12 @@ cp "$WORK_DIR/grub/grub.cfg" config/includes.binary/boot/grub/grub.cfg
 sed -i 's/\r$//' config/includes.binary/boot/grub/grub.cfg
 
 # Hook to create the 'soia' user with passwordless sudo
+# NOTE: live-build on Debian Bookworm requires the .hook.chroot suffix!
 mkdir -p config/hooks/live
-cat << 'EOF' > config/hooks/live/01-create-soia-user.chroot
+cat << 'EOF' > config/hooks/live/01-create-soia-user.hook.chroot
 #!/bin/sh
 set -e
+echo "[SOIA] Running 01-create-soia-user.hook.chroot..."
 if ! id -u soia >/dev/null 2>&1; then
   useradd -m -s /bin/bash -G sudo,audio,video,netdev soia
 fi
@@ -156,6 +158,7 @@ for grp in seat _seatd plugdev render input; do
   getent group "$grp" >/dev/null 2>&1 && usermod -aG "$grp" soia || true
 done
 echo "soia:soia" | chpasswd
+echo "root:soia" | chpasswd
 echo "soia ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/soia
 chmod 0440 /etc/sudoers.d/soia
 mkdir -p /home/soia
@@ -188,7 +191,7 @@ fi
 SH
 chown soia:soia /home/soia/.bash_profile
 EOF
-chmod +x config/hooks/live/01-create-soia-user.chroot
+chmod +x config/hooks/live/01-create-soia-user.hook.chroot
 
 # Bundle the SOIA application inside /opt/soia of the live image
 mkdir -p config/includes.chroot/opt/soia
@@ -203,20 +206,23 @@ if [ -d "$WORK_DIR/../dist" ] && [ -d "$WORK_DIR/../dist-electron" ]; then
 fi
 
 # Hook to install production dependencies and Electron inside chroot
-cat << 'EOF' > config/hooks/live/02-install-soia-deps.chroot
+cat << 'EOF' > config/hooks/live/02-install-soia-deps.hook.chroot
 #!/bin/sh
+set -e
+echo "[SOIA] Running 02-install-soia-deps.hook.chroot..."
 if [ -d /opt/soia ]; then
     cd /opt/soia
-    npm install --omit=dev --no-audit --no-fund || true
-    npm install electron --no-save --no-audit --no-fund || true
+    npm install --omit=dev --no-audit --no-fund
+    npm install electron --no-save --no-audit --no-fund
     chown -R soia:soia /opt/soia
     if [ -f /opt/soia/node_modules/electron/dist/chrome-sandbox ]; then
         chown root:root /opt/soia/node_modules/electron/dist/chrome-sandbox
         chmod 4755 /opt/soia/node_modules/electron/dist/chrome-sandbox
     fi
+    ls -lh /opt/soia/node_modules/.bin/electron
 fi
 EOF
-chmod +x config/hooks/live/02-install-soia-deps.chroot
+chmod +x config/hooks/live/02-install-soia-deps.hook.chroot
 
 # Binary hook: ensure /live/vmlinuz and /live/initrd.img exist as regular files
 # (required by GRUB and FAT32 USB extraction in Rufus ISO mode)
