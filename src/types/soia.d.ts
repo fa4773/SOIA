@@ -21,6 +21,37 @@ export interface SystemInfo {
   isLiveDebian: boolean;
 }
 
+export interface NetworkDevice {
+  device: string;
+  type: string;
+  state: string;
+  connection: string;
+}
+
+export interface WifiNetwork {
+  inUse: boolean;
+  ssid: string;
+  signal: number;
+  security: string;
+}
+
+export type AiProvider =
+  | 'ollama'
+  | 'openai'
+  | 'anthropic'
+  | 'gemini'
+  | 'openrouter'
+  | 'groq'
+  | 'custom';
+
+export interface AiConfig {
+  provider: AiProvider;
+  model: string;
+  apiKey: string;
+  baseUrl: string;
+  temperature: number;
+}
+
 export interface SoiaBridge {
   getSystemInfo: () => Promise<SystemInfo>;
   sendShellInput: (input: string) => void;
@@ -36,6 +67,14 @@ export interface SoiaBridge {
   readFile: (filePath: string) => Promise<{ success: boolean; content?: string; error?: string }>;
   installLinuxPackage: (packageName: string) => void;
   openExternal: (url: string) => void;
+  getNetworkStatus: () => Promise<{ success: boolean; devices: NetworkDevice[]; error?: string }>;
+  scanWifiNetworks: () => Promise<{ success: boolean; networks: WifiNetwork[]; error?: string }>;
+  connectWifi: (ssid: string, password?: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  disconnectNetwork: (device: string) => Promise<{ success: boolean; error?: string }>;
+  aiChat: (payload: {
+    config: AiConfig;
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
+  }) => Promise<{ success: boolean; content?: string; error?: string }>;
 }
 
 declare global {

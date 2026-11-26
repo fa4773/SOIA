@@ -2,6 +2,8 @@
 // SOIA OS - Electron Main Process (Autonomous Linux / Dev Harness)
 // ==============================================================================
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs';
@@ -9,6 +11,8 @@ import { fileURLToPath } from 'node:url';
 import { ptyManager } from './ptyManager.js';
 import { windowTabsManager, TabDefinition } from './windowTabs.js';
 import { securityPolicy, SecurityProfile } from './securityPolicy.js';
+
+const execFileAsync = promisify(execFile);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -188,6 +192,282 @@ function registerIpcHandlers(): void {
   ipcMain.on('soia:open-external', (_event, url: string) => {
     shell.openExternal(url);
   });
+
+  // ============================================================================
+  // Network & Wi-Fi Management (NetworkManager / nmcli on Linux)
+  // ============================================================================
+  ipcMain.handle('soia:net-status', async () => {
+    if (os.platform() !== 'linux') {
+      return {
+        success: true,
+        devices: [
+          { device: 'eth0', type: 'ethernet', state: 'connected', connection: 'Host Network (Dev)' }
+        ]
+      };
+    }
+    try {
+      const { stdout } = await execFileAsync('nmcli', ['-t', '-f', 'DEVICE,TYPE,STATE,CONNECTION', 'device', 'status'], {
+        timeout: 8000
+      });
+      const devices = stdout
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const [device = '', type = '', state = '', connection = ''] = line.split(':');
+          return { device, type, state, connection };
+        })
+        .filter((d) => d.type === 'wifi' || d.type === 'ethernet');
+      return { success: true, devices };
+    } catch (err: any) {
+      return { success: false, devices: [], error: err?.message || 'nmcli not available' };
+    }
+  });
+
+  ipcMain.handle('soia:wifi-scan', async () => {
+    if (os.platform() !== 'linux') {
+      return {
+        success: true,
+        networks: [
+          { inUse: true, ssid: 'Host-WiFi-Preview', signal: 90, security: 'WPA2' }
+        ]
+      };
+    }
+    try {
+      // Ensure Wi-Fi radio is enabled
+      await execFileAsync('nmcli', ['radio', 'wifi', 'on'], { timeout: 5000 }).catch(() => {});
+      let stdout = '';
+      try {
+        const res = await execFileAsync(
+          'nmcli',
+          ['-t', '-f', 'IN-USE,SSID,SIGNAL,SECURITY', 'device', 'wifi', 'list', '--rescan', 'yes'],
+          { timeout: 15000 }
+        );
+        stdout = res.stdout;
+      } catch {
+        const res = await execFileAsync(
+          'nmcli',
+          ['-t', '-f', 'IN-USE,SSID,SIGNAL,SECURITY', 'device', 'wifi', 'list'],
+          { timeout: 10000 }
+        );
+        stdout = res.stdout;
+      }
+
+      const bySsid = new Map<string, { inUse: boolean; ssid: string; signal: number; security: string }>();
+      for (const rawLine of stdout.split('\n')) {
+        const line = rawLine.trim();
+        if (!line) continue;
+        // nmcli escapes ':' inside fields as '\:'
+        const parts = line.split(/(?<!\\):/).map((p) => p.replace(/\\:/g, ':'));
+        const inUse = parts[0] === '*';
+        const ssid = (parts[1] || '').trim();
+        const signal = parseInt(parts[2] || '0', 10) || 0;
+        const security = (parts[3] || 'Open').trim() || 'Open';
+        if (!ssid) continue;
+
+        const existing = bySsid.get(ssid);
+        if (!existing || inUse || signal > existing.signal) {
+          bySsid.set(ssid, { inUse: inUse || existing?.inUse || false, ssid, signal, security });
+        }
+      }
+
+      const networks = Array.from(bySsid.values()).sort((a, b) => {
+        if (a.inUse !== b.inUse) return a.inUse ? -1 : 1;
+        return b.signal - a.signal;
+      });
+      return { success: true, networks };
+    } catch (err: any) {
+      return { success: false, networks: [], error: err?.stderr || err?.message || 'Wi-Fi scan failed' };
+    }
+  });
+
+  ipcMain.handle('soia:wifi-connect', async (_event, { ssid, password }: { ssid: string; password?: string }) => {
+    if (!ssid) return { success: false, error: 'SSID is required' };
+    if (os.platform() !== 'linux') {
+      return { success: true, message: `Simulated connection to ${ssid}` };
+    }
+    try {
+      const args = ['device', 'wifi', 'connect', ssid];
+      if (password && password.length > 0) {
+        args.push('password', password);
+      }
+      const { stdout } = await execFileAsync('nmcli', args, { timeout: 25000 });
+      return { success: true, message: stdout.trim() || `Connected to ${ssid}` };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: (err?.stderr || err?.stdout || err?.message || 'Failed to connect').trim()
+      };
+    }
+  });
+
+  ipcMain.handle('soia:wifi-disconnect', async (_event, { device }: { device: string }) => {
+    if (!device) return { success: false, error: 'Device name is required' };
+    if (os.platform() !== 'linux') return { success: true };
+    try {
+      await execFileAsync('nmcli', ['device', 'disconnect', device], { timeout: 10000 });
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: (err?.stderr || err?.message || 'Disconnect failed').trim() };
+    }
+  });
+
+  // ============================================================================
+  // Multi-Provider AI Chat (Ollama Local + OpenAI / Gemini / Anthropic / OpenRouter / Groq / Custom)
+  // ============================================================================
+  ipcMain.handle(
+    'soia:ai-chat',
+    async (
+      _event,
+      payload: {
+        config: {
+          provider: string;
+          model: string;
+          apiKey?: string;
+          baseUrl?: string;
+          temperature?: number;
+        };
+        messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
+      }
+    ) => {
+      const { config, messages } = payload;
+      const provider = config.provider || 'ollama';
+      const model = (config.model || '').trim();
+      const apiKey = (config.apiKey || '').trim();
+      const temperature = typeof config.temperature === 'number' ? config.temperature : 0.7;
+
+      if (!model) {
+        return { success: false, error: 'Model name is empty. Configure a model in Settings -> Models & AI.' };
+      }
+
+      try {
+        // 1. Ollama (Local)
+        if (provider === 'ollama') {
+          const base = (config.baseUrl || 'http://localhost:11434').replace(/\/+$/, '');
+          const res = await fetch(`${base}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model,
+              messages,
+              stream: false,
+              options: { temperature }
+            })
+          });
+          if (!res.ok) {
+            const txt = await res.text();
+            return { success: false, error: `Ollama error (${res.status}): ${txt.slice(0, 300)}` };
+          }
+          const data: any = await res.json();
+          return { success: true, content: data?.message?.content || data?.response || '' };
+        }
+
+        if (!apiKey && provider !== 'custom') {
+          return {
+            success: false,
+            error: `API Key mancante per il provider "${provider}". Inseriscila in Settings -> Models & AI.`
+          };
+        }
+
+        // 2. Google Gemini REST API
+        if (provider === 'gemini') {
+          const systemMsg = messages.find((m) => m.role === 'system')?.content;
+          const contents = messages
+            .filter((m) => m.role !== 'system')
+            .map((m) => ({
+              role: m.role === 'assistant' ? 'model' : 'user',
+              parts: [{ text: m.content }]
+            }));
+          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+          const body: any = {
+            contents,
+            generationConfig: { temperature }
+          };
+          if (systemMsg) {
+            body.systemInstruction = { parts: [{ text: systemMsg }] };
+          }
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          const data: any = await res.json();
+          if (!res.ok) {
+            return { success: false, error: data?.error?.message || `Gemini HTTP ${res.status}` };
+          }
+          const text = data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || '').join('') || '';
+          return { success: true, content: text };
+        }
+
+        // 3. Anthropic Claude Messages API
+        if (provider === 'anthropic') {
+          const systemMsg = messages.find((m) => m.role === 'system')?.content;
+          const chatMessages = messages
+            .filter((m) => m.role !== 'system')
+            .map((m) => ({ role: m.role, content: m.content }));
+          const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+              model,
+              max_tokens: 2048,
+              temperature,
+              ...(systemMsg ? { system: systemMsg } : {}),
+              messages: chatMessages
+            })
+          });
+          const data: any = await res.json();
+          if (!res.ok) {
+            return { success: false, error: data?.error?.message || `Anthropic HTTP ${res.status}` };
+          }
+          const text = Array.isArray(data?.content)
+            ? data.content.map((c: any) => c.text || '').join('')
+            : '';
+          return { success: true, content: text };
+        }
+
+        // 4. OpenAI / OpenRouter / Groq / Custom OpenAI-compatible
+        const defaultBases: Record<string, string> = {
+          openai: 'https://api.openai.com/v1',
+          openrouter: 'https://openrouter.ai/api/v1',
+          groq: 'https://api.groq.com/openai/v1',
+          custom: 'https://api.openai.com/v1'
+        };
+        const base = (config.baseUrl || defaultBases[provider] || defaultBases.openai).replace(/\/+$/, '');
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json'
+        };
+        if (apiKey) {
+          headers['Authorization'] = `Bearer ${apiKey}`;
+        }
+        if (provider === 'openrouter') {
+          headers['HTTP-Referer'] = 'https://soia-os.local';
+          headers['X-Title'] = 'SOIA OS';
+        }
+        const res = await fetch(`${base}/chat/completions`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model,
+            messages,
+            temperature
+          })
+        });
+        const data: any = await res.json();
+        if (!res.ok) {
+          return { success: false, error: data?.error?.message || `${provider} HTTP ${res.status}` };
+        }
+        const text = data?.choices?.[0]?.message?.content || '';
+        return { success: true, content: text };
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Network or AI provider error' };
+      }
+    }
+  );
 }
 
 app.whenReady().then(() => {

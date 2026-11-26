@@ -6,7 +6,25 @@ import { AgenticBrowser } from './components/AgenticBrowser';
 import { TerminalTab } from './components/TerminalTab';
 import { DocumentViewerTab } from './components/DocumentViewerTab';
 import { SettingsModal } from './components/SettingsModal';
-import { FileEntry, SystemInfo } from './types/soia';
+import { AiConfig, FileEntry, SystemInfo } from './types/soia';
+
+const DEFAULT_AI_CONFIG: AiConfig = {
+  provider: 'gemini',
+  model: 'gemini-2.5-flash',
+  apiKey: '',
+  baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+  temperature: 0.7
+};
+
+function loadSavedAiConfig(): AiConfig {
+  try {
+    const raw = localStorage.getItem('soia_ai_config');
+    if (raw) {
+      return { ...DEFAULT_AI_CONFIG, ...JSON.parse(raw) };
+    }
+  } catch {}
+  return DEFAULT_AI_CONFIG;
+}
 
 export const App: React.FC = () => {
   // Detect detached window via URL query parameters
@@ -41,9 +59,23 @@ export const App: React.FC = () => {
 
   const [activeTabId, setActiveTabId] = useState<string>('tab-0');
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [settingsTab, setSettingsTab] = useState<'ai' | 'network' | 'security' | 'system' | 'expand'>('ai');
+  const [aiConfig, setAiConfig] = useState<AiConfig>(loadSavedAiConfig);
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [securityProfile, setSecurityProfile] = useState<'strict' | 'balanced' | 'autonomous'>('balanced');
+
+  const handleOpenSettings = (tab: 'ai' | 'network' | 'security' | 'system' | 'expand' = 'ai') => {
+    setSettingsTab(tab);
+    setIsSettingsOpen(true);
+  };
+
+  const handleUpdateAiConfig = (next: AiConfig) => {
+    setAiConfig(next);
+    try {
+      localStorage.setItem('soia_ai_config', JSON.stringify(next));
+    } catch {}
+  };
 
   useEffect(() => {
     // Initial loading of system info and files
@@ -204,7 +236,7 @@ export const App: React.FC = () => {
       <Sidebar
         activeTabId={activeTabId}
         onSelectTab={handleSelectTab}
-        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenSettings={() => handleOpenSettings('ai')}
         files={files}
         onCreateDoc={() => handleCreateDoc()}
         onOpenFile={handleOpenFile}
@@ -232,8 +264,10 @@ export const App: React.FC = () => {
               onOpenBrowserUrl={(_url) => {
                 handleSelectTab('tab-browser');
               }}
+              onOpenSettings={handleOpenSettings}
               systemInfo={systemInfo}
               securityProfile={securityProfile}
+              aiConfig={aiConfig}
             />
           </div>
 
@@ -244,12 +278,17 @@ export const App: React.FC = () => {
             </div>
           )}
 
-          {/* Linux Terminal Tab */}
-          {tabs.some((t) => t.id === 'tab-terminal') && (
-            <div className={`w-full h-full ${activeTabId === 'tab-terminal' ? 'block' : 'hidden'}`}>
-              <TerminalTab />
-            </div>
-          )}
+          {/* Linux Terminal Tabs */}
+          {tabs
+            .filter((t) => t.type === 'terminal')
+            .map((tab) => (
+              <div
+                key={tab.id}
+                className={`w-full h-full ${activeTabId === tab.id ? 'block' : 'hidden'}`}
+              >
+                <TerminalTab isActive={activeTabId === tab.id} />
+              </div>
+            ))}
 
           {/* Open Document & Editor Tabs */}
           {tabs
@@ -269,10 +308,13 @@ export const App: React.FC = () => {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+        initialTab={settingsTab}
         systemInfo={systemInfo}
         securityProfile={securityProfile}
         onUpdateSecurityProfile={handleUpdateSecurityProfile}
         onInstallPackage={handleInstallPackage}
+        aiConfig={aiConfig}
+        onUpdateAiConfig={handleUpdateAiConfig}
       />
     </div>
   );

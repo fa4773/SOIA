@@ -18,6 +18,20 @@ export interface SoiaAPI {
   readFile: (filePath: string) => Promise<{ success: boolean; content?: string; error?: string }>;
   installLinuxPackage: (packageName: string) => void;
   openExternal: (url: string) => void;
+  getNetworkStatus: () => Promise<any>;
+  scanWifiNetworks: () => Promise<any>;
+  connectWifi: (ssid: string, password?: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  disconnectNetwork: (device: string) => Promise<{ success: boolean; error?: string }>;
+  aiChat: (payload: {
+    config: {
+      provider: string;
+      model: string;
+      apiKey?: string;
+      baseUrl?: string;
+      temperature?: number;
+    };
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
+  }) => Promise<{ success: boolean; content?: string; error?: string }>;
 }
 
 const soiaBridge: SoiaAPI = {
@@ -43,7 +57,12 @@ const soiaBridge: SoiaAPI = {
     ipcRenderer.invoke('soia:fs-create-doc', { name, content, format }),
   readFile: (filePath: string) => ipcRenderer.invoke('soia:fs-read', filePath),
   installLinuxPackage: (packageName: string) => ipcRenderer.send('soia:install-package', packageName),
-  openExternal: (url: string) => ipcRenderer.send('soia:open-external', url)
+  openExternal: (url: string) => ipcRenderer.send('soia:open-external', url),
+  getNetworkStatus: () => ipcRenderer.invoke('soia:net-status'),
+  scanWifiNetworks: () => ipcRenderer.invoke('soia:wifi-scan'),
+  connectWifi: (ssid: string, password?: string) => ipcRenderer.invoke('soia:wifi-connect', { ssid, password }),
+  disconnectNetwork: (device: string) => ipcRenderer.invoke('soia:wifi-disconnect', { device }),
+  aiChat: (payload) => ipcRenderer.invoke('soia:ai-chat', payload)
 };
 
 contextBridge.exposeInMainWorld('soia', soiaBridge);

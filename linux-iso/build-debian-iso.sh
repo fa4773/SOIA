@@ -65,10 +65,10 @@ pciutils
 usbutils
 
 # Ultra-lightweight Wayland Compositor and Display (cage kiosk + sway / xwayland)
+# Note: use native systemd-logind (do not install seatd) so Ctrl+Alt+F2/F3 VT switching works cleanly
 cage
 sway
 xwayland
-seatd
 dbus-user-session
 libgl1-mesa-dri
 libegl1
@@ -116,7 +116,8 @@ libxdamage1
 libxrandr2
 EOF
 
-# Chroot customization: Live user 'soia', autologin (zz- prefix wins over live-config)
+# Chroot customization: Live user 'soia', autologin on tty1 (zz- prefix wins over live-config)
+# and clean interactive login prompts on tty2-tty4 so Ctrl+Alt+F2/F3/F4 always work
 echo "[4/6] Configuring user, Wayland session, and permissions..."
 mkdir -p config/includes.chroot/etc/systemd/system/getty@tty1.service.d
 cat << 'EOF' > config/includes.chroot/etc/systemd/system/getty@tty1.service.d/zz-soia-autologin.conf
@@ -124,6 +125,15 @@ cat << 'EOF' > config/includes.chroot/etc/systemd/system/getty@tty1.service.d/zz
 ExecStart=
 ExecStart=-/sbin/agetty --autologin soia --noclear %I $TERM
 EOF
+
+for tty in tty2 tty3 tty4; do
+  mkdir -p "config/includes.chroot/etc/systemd/system/getty@${tty}.service.d"
+  cat << 'EOF' > "config/includes.chroot/etc/systemd/system/getty@${tty}.service.d/zz-soia-tty.conf"
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --noclear %I $TERM
+EOF
+done
 
 # Copy startup, persistence, and installer scripts to /usr/local/bin
 mkdir -p config/includes.chroot/usr/local/bin

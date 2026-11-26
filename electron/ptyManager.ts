@@ -1,8 +1,9 @@
 // ==============================================================================
-// SOIA PTY / Shell Session Manager (Cross-Platform Linux & Windows)
+// SOIA PTY / Shell Session Manager (Cross-Platform Linux Real PTY & Windows)
 // ==============================================================================
 import { spawn, ChildProcess } from 'node:child_process';
 import os from 'node:os';
+import fs from 'node:fs';
 import { EventEmitter } from 'node:events';
 
 export interface ShellOutputPayload {
@@ -12,6 +13,7 @@ export interface ShellOutputPayload {
 export class PtyManager extends EventEmitter {
   private shellProcess: ChildProcess | null = null;
   private isWindows: boolean = os.platform() === 'win32';
+  private usesRealPty: boolean = false;
 
   constructor() {
     super();
@@ -23,10 +25,18 @@ export class PtyManager extends EventEmitter {
       ? (process.env.COMSPEC || 'powershell.exe')
       : (process.env.SHELL || '/bin/bash');
 
-    const shellArgs = this.isWindows ? ['-NoLogo'] : ['-i'];
+    const hasScriptCmd = !this.isWindows && fs.existsSync('/usr/bin/script');
+    this.usesRealPty = hasScriptCmd;
+
+    const command = hasScriptCmd ? '/usr/bin/script' : defaultShell;
+    const args = hasScriptCmd
+      ? ['-qfc', `${defaultShell} -i`, '/dev/null']
+      : this.isWindows
+        ? ['-NoLogo']
+        : ['-i'];
 
     try {
-      this.shellProcess = spawn(defaultShell, shellArgs, {
+      this.shellProcess = spawn(command, args, {
         cwd: os.homedir(),
         env: {
           ...process.env,
@@ -56,7 +66,7 @@ export class PtyManager extends EventEmitter {
 
       const initialMessage = this.isWindows
         ? `\x1b[1;36m[SOIA OS Dev Harness - Windows Host]\x1b[0m\r\nShell: ${defaultShell}\r\n\r\n`
-        : `\x1b[1;32m[SOIA OS Linux Debian Harness]\x1b[0m\r\nKernel: ${os.release()} (${os.arch()})\r\n\r\n`;
+        : `\x1b[1;32m[SOIA OS Linux Debian Harness${hasScriptCmd ? ' - PTY Ready' : ''}]\x1b[0m\r\nKernel: ${os.release()} (${os.arch()})\r\n\r\n`;
 
       setTimeout(() => this.emit('data', initialMessage), 200);
     } catch (error) {
@@ -66,7 +76,21 @@ export class PtyManager extends EventEmitter {
 
   public write(input: string): void {
     if (this.shellProcess && this.shellProcess.stdin && !this.shellProcess.stdin.destroyed) {
-      this.shellProcess.stdin.write(input);
+      if (this.usesRealPty) {
+        this.shellProcess.stdin.write(input);
+      } else {
+        // Pipe fallback (Windows or minimal Linux without /usr/bin/script):
+        // echo typed characters locally and normalize CR to LF so bash/powershell executes lines.
+        const normalized = input.replace(/\r\n|\r/g, '\n');
+        this.shellProcess.stdin.write(normalized);
+        if (input === '\r' || input === '\n') {
+          this.emit('data', '\r\n');
+        } else if (input === '\u007f') {
+          this.emit('data', '\b \b');
+        } else if (!input.includes('\n')) {
+          this.emit('data', input);
+        }
+      }
     }
   }
 
