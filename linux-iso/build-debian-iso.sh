@@ -190,9 +190,21 @@ if [ -z "$WAYLAND_DISPLAY" ] && [ "$XDG_VTNR" = "1" ]; then
   echo "[SOIA] Avvio sessione grafica Wayland..."
   if command -v cage >/dev/null 2>&1; then
     cage -s -- /usr/local/bin/soia-autostart 2>/tmp/soia-session.log || {
-      echo "[SOIA] Errore durante l'avvio grafico con cage. Log: /tmp/soia-session.log"
-      tail -n 20 /tmp/soia-session.log 2>/dev/null || true
-      echo "[SOIA] Shell di emergenza attiva. Esegui 'cat /tmp/soia-session.log' per dettagli."
+      if [ "${WLR_RENDERER:-}" != "pixman" ]; then
+        echo "[SOIA] Avvio grafico standard fallito, riprovo in modalità software (pixman)..."
+        export WLR_RENDERER=pixman
+        export WLR_NO_HARDWARE_CURSORS=1
+        export LIBGL_ALWAYS_SOFTWARE=1
+        cage -s -- /usr/local/bin/soia-autostart 2>>/tmp/soia-session.log || {
+          echo "[SOIA] Errore durante l'avvio grafico con cage. Log: /tmp/soia-session.log"
+          tail -n 20 /tmp/soia-session.log 2>/dev/null || true
+          echo "[SOIA] Shell di emergenza attiva. Esegui 'cat /tmp/soia-session.log' per dettagli."
+        }
+      else
+        echo "[SOIA] Errore durante l'avvio grafico con cage. Log: /tmp/soia-session.log"
+        tail -n 20 /tmp/soia-session.log 2>/dev/null || true
+        echo "[SOIA] Shell di emergenza attiva. Esegui 'cat /tmp/soia-session.log' per dettagli."
+      fi
     }
   elif command -v sway >/dev/null 2>&1; then
     sway 2>/tmp/soia-session.log || true

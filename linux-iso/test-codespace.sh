@@ -2,29 +2,47 @@
 # ==============================================================================
 # SOIA OS - Test ISO su GitHub Codespaces (QEMU + noVNC)
 # Uso:
-#   bash linux-iso/test-codespace.sh <URL_ISO_O_TAG_RELEASE> [--uefi]
+#   bash linux-iso/test-codespace.sh [URL_ISO | TAG_RELEASE | RUN_ID] [--uefi]
 # Esempi:
+#   bash linux-iso/test-codespace.sh              # scarica l'ultima ISO da GitHub Actions
+#   bash linux-iso/test-codespace.sh 45805008813  # scarica l'artifact di uno specifico run
 #   bash linux-iso/test-codespace.sh "https://github.com/fa4773/SOIA/releases/download/v1.0.0/soia-os-latest-amd64.iso"
-#   bash linux-iso/test-codespace.sh v1.0.0          # scarica via gh CLI (utile per repo private)
-#   bash linux-iso/test-codespace.sh v1.0.0 --uefi   # avvia in modalità UEFI (OVMF)
+#   bash linux-iso/test-codespace.sh v1.0.0 --uefi
 # ==============================================================================
 set -euo pipefail
 
-if [ "$#" -lt 1 ]; then
-  echo "Uso: $0 <URL_ISO | TAG_RELEASE> [--uefi]"
-  exit 1
-fi
-
-TARGET="$1"
+TARGET="${1:-}"
 USE_UEFI=false
-if [ "${2:-}" = "--uefi" ]; then
+if [ "${1:-}" = "--uefi" ]; then
+  TARGET=""
+  USE_UEFI=true
+elif [ "${2:-}" = "--uefi" ]; then
   USE_UEFI=true
 fi
 
 ISO_FILE="/tmp/soia-test.iso"
 
 echo "=== [1/4] Download della ISO ==="
-if [[ "$TARGET" =~ ^https?:// ]]; then
+if [ -z "$TARGET" ]; then
+  if ! command -v gh >/dev/null 2>&1; then
+    echo "[ERRORE] 'gh' CLI non installata. Passa l'URL diretto della ISO."
+    exit 1
+  fi
+  RUN_ID=$(gh run list --workflow="build-iso.yml" --status success -L 1 --json databaseId -q '.[0].databaseId')
+  if [ -z "$RUN_ID" ]; then
+    echo "[ERRORE] Nessun build riuscito trovato per build-iso.yml."
+    exit 1
+  fi
+  echo "[INFO] Scarico artifact dell'ultimo build riuscito (Run ID: $RUN_ID)..."
+  rm -f "$ISO_FILE" /tmp/soia-os-latest-amd64.iso
+  gh run download "$RUN_ID" -n soia-os-latest-amd64 -D /tmp
+  mv /tmp/soia-os-latest-amd64.iso "$ISO_FILE"
+elif [[ "$TARGET" =~ ^[0-9]+$ ]]; then
+  echo "[INFO] Scarico artifact dal Run ID: $TARGET..."
+  rm -f "$ISO_FILE" /tmp/soia-os-latest-amd64.iso
+  gh run download "$TARGET" -n soia-os-latest-amd64 -D /tmp
+  mv /tmp/soia-os-latest-amd64.iso "$ISO_FILE"
+elif [[ "$TARGET" =~ ^https?:// ]]; then
   wget -O "$ISO_FILE" "$TARGET"
 else
   if ! command -v gh >/dev/null 2>&1; then
@@ -50,12 +68,12 @@ if [ "$USE_UEFI" = true ]; then
   PKGS+=(ovmf)
 fi
 sudo apt-get update -y
-sudo apt-get install -y "${PKGS[@]}"
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "${PKGS[@]}"
 
 # Termina eventuali sessioni precedenti sulla stessa porta/VNC
 pkill -f "qemu-system-x86_64.*-vnc :0" 2>/dev/null || true
 pkill -f "websockify.*6080" 2>/dev/null || true
-sleep 1
+sleep 2
 
 echo "=== [4/4] Avvio QEMU + noVNC ==="
 QEMU_ARGS=(
@@ -63,6 +81,8 @@ QEMU_ARGS=(
   -m 4096
   -smp 2
   -vga virtio
+  -usb
+  -device usb-tablet
   -vnc :0
 )
 
